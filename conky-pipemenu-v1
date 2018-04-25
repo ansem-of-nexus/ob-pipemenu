@@ -1,0 +1,42 @@
+#!/bin/bash
+#
+# add to menus like openbox with:
+# <menu execute="script-name /path/to/conky" id="script-name" label="menu item name"/>
+# default folder scanning depth is 2 to look deeper change -maxdepth to desired depth in the list line
+#
+list="$(find $1 -maxdepth 2 -type f -name *.conkyrc | sort)"
+echo "<openbox_pipe_menu>"
+echo '<item label="conky folder"><action name="Execute"><command>'
+echo 'thunar '$1
+echo '</command></action></item>'
+echo '<separator label="conky configs"/>'
+for f in $list
+do
+#menu start
+echo '<menu id="' $f
+echo '" label="'
+echo $f | awk -F $1/ '{print $2}'
+echo '">'
+#conky start
+echo '<item label="start: '
+echo $f | awk -F $1/ '{print $2}'
+echo '"><action name="Execute"><command>'
+echo 'conky -c ' $f
+echo '</command></action></item>'
+#kill conky
+echo '<item label="kill: '
+echo $f | awk -F $1/ '{print $2}'
+echo '"><action name="Execute"><command>'
+echo 'pkill -xf "conky -c '$f'"'
+echo '</command></action></item>'
+#edit conky
+echo '<item label="edit: '
+echo $f | awk -F $1/ '{print $2}'
+echo '"><action name="Execute"><command>'
+echo 'geany '$f
+echo '</command></action></item>'
+#end of menu
+echo '</menu>'
+done
+echo "</openbox_pipe_menu>"
+exit

@@ -1,0 +1,56 @@
+#!/bin/bash
+#
+# add to menus like openbox with a like this:
+# <menu execute="script-name /path/to/folder/" id="script-name" label="menu name"/>
+#
+#locking path
+case "$1" in
+  */)
+    declare -r path=$1
+    ;;
+  *)
+    declare -r path=$1/
+    ;;
+esac
+function icall () { echo '<item label="'$1'"><action name="Execute"><command>' ;}
+function iend () { echo '</command></action></item>' ;}
+# start of menu
+echo "<openbox_pipe_menu>"
+  status=$(pidof mocp)
+  if [[ -z $status ]]; then
+    #start music player, because it isn't running
+    icall "Start MOCP"
+      echo 'terminator -T "MOCP" -e "mocp"'
+    iend
+  else
+    #show song name
+    #title="$(mocp -Q %file | awk -F'$path' '{Print $2}')"
+    title="$(mocp -Q 'MOC [%state] %song')"
+    echo '<separator label="'$title'"/>'
+    #controls
+    icall "Play / Pause"
+      echo "mocp -G"
+    iend
+    icall "Next"
+      echo "mocp -f"
+    iend
+    icall "Previous"
+      echo "mocp -r"
+    iend
+    echo '<separator/>'
+    #open music player
+    icall "Open MOCP"
+      echo 'terminator -T "MOCP" -e "mocp"'
+    iend
+    #link to path
+    icall "Music Folder"
+      echo 'thunar '$path''
+    iend
+    #kill mocp
+    icall "Kill Mocp"
+      echo 'mocp -x'
+    iend
+  fi
+#end of pipemenu
+echo "</openbox_pipe_menu>"
+exit

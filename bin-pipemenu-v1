@@ -1,0 +1,22 @@
+#!/bin/bash
+#
+# add to menus like openbox with:
+# <menu execute="script-name" id="script-name" label="menu item name"/>
+# default editor is geany, to change just replace geany with your prefered editor
+#
+list="$(find ~/Dropbox/bin -maxdepth 2 -type f | sort)"
+echo "<openbox_pipe_menu>"
+echo '<item label="bin folder"><action name="Execute"><command>'
+echo 'thunar ./bin'
+echo '</command></action></item>'
+echo '<separator label="bin files"/>'
+for f in $list
+do
+echo '<item label="edit: '
+echo $f | awk -F './bin/' '{print $2}'
+echo '"><action name="Execute"><command>'
+echo 'geany '$f
+echo '</command></action></item>'
+done
+echo "</openbox_pipe_menu>"
+exit

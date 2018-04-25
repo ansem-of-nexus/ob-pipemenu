@@ -1,0 +1,95 @@
+#!/bin/bash
+#
+# Known problems:
+#
+#     roms or folder names containing a '&' will throw errors. Unknown -
+#     at this time if it's a openbox or script issue
+#
+# add to menus like openbox with a like this:
+# <menu execute="script-name /path/to/files/" id="script-name" label="menu name"/>
+#
+# file manager
+fm='thunar'
+#
+# Do not edit lines passed this point unless you know what you are doing
+#
+#locking path
+case "$1" in
+  */)
+    declare -r path=$1
+    ;;
+  *)
+    declare -r path=$1/
+    ;;
+esac
+# making for loop ignore spaces
+IFS=$(echo -en "\n\b")
+# functions
+function file_logic () {
+if [[ "$1" == *.conf ]]; then echo conky -c \"$2/$1\"
+elif [[ "$1" == *.snes ]]; then echo $snes \"$2/$1\"
+elif [[ "$1" == *.iso ]] || [[ "$1" == *.cue ]]; then
+    mcall $1
+	icall "Playstation 1"
+	    echo $ps1 \"$2$1\"
+	iend
+	icall "Gamecube"
+	    echo $cube \"$2$1\"
+	iend
+	icall "Wii"
+	    echo $wii \"$2$1\"
+	iend
+    mend
+else echo $fm \"$2\" ;fi
+}
+# vars
+id_number=0
+function menu_id () { ((id_number++)) ;}
+function mcall () {
+    menu_id
+    echo '<menu id="Rom_menu_id_'$id_number'" label="'$1'">' ;}
+function mend () { echo '</menu>' ;}
+function icall () { echo '<item label="'$1'"><action name="Execute"><command>' ;}
+function iend () { echo '</command></action></item>' ;}
+# start of menu
+echo "<openbox_pipe_menu>"
+#link to path
+icall "Conky Folder"
+echo $fm $path
+iend
+#pulling sub folder list
+echo '<separator label="Grouped Configs"/>'
+list1="$(ls -Q1F $path | grep -F '/' | awk -F'"' '{print $2}' | awk -F'"' '{print $1}')"
+for folder in $list1; do
+mcall $folder
+    #pulling roms list from folders
+    list2="$(ls -Q1F $path$folder | grep -Fv '/' | awk -F'"' '{print $2}' | awk -F'"' '{print $1}')"
+    for file1 in $list2; do
+	if [[ "$file1" == *.bin ]]; then
+	    echo "<!-- '$file1' gets no entry -->"
+	else
+	    icall $file1
+		emulator $file1 $path$folder/
+	    iend
+	fi
+    #done for pulling roms list
+    done
+    #done for pulling folder list
+mend
+done
+echo '<separator label="Single Roms"/>'
+#pulling roms list from main folders
+list3="$(ls -Q1F $path | grep -Fv '/' | awk -F'"' '{print $2}' | awk -F'"' '{print $1}')"
+for file2 in $list3; do
+    if [[ "$file2" == *.bin ]]; then
+	echo "<!-- '$file2' gets no entry -->"
+    else
+	icall $file2
+	    emulator $file2 $path
+	iend
+    fi
+#done for pulling roms list
+done
+#end of pipemenu
+echo "</openbox_pipe_menu>"
+exit

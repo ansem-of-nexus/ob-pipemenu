@@ -1,0 +1,86 @@
+#!/bin/bash
+#
+# add to menus like openbox with:
+# <menu execute="script-name /path/to/conky" id="script-name" label="menu item name"/>
+#
+echo "<openbox_pipe_menu>"
+echo '<item label="Kill Conky"><action name="Execute"><command>'
+echo 'killall conky'
+echo '</command></action></item>'
+echo '<item label="conky folder"><action name="Execute"><command>'
+echo 'thunar '$1
+echo '</command></action></item>'
+echo '<separator label="group configs"/>'
+list1="$(ls -F $1 | grep -F '/')"
+for f1 in $list1
+do
+echo '<menu id="'$f1
+echo '" label="'
+echo $f1
+echo '">'
+#pulling conkyrc list from folders
+list2="$(ls $1/$f1 | grep -F 'conf')"
+for f2 in $list2
+do
+#menu start
+echo '<menu id="'$f2
+echo '" label="'
+echo $f2
+echo '">'
+#conky start
+echo '<item label="start: '
+echo $f2
+echo '"><action name="Execute"><command>'
+echo 'conky -c '$1/$f1$f2
+echo '</command></action></item>'
+#kill conky
+echo '<item label="kill: '
+echo $f2
+echo '"><action name="Execute"><command>'
+echo 'pkill -xf "conky -c '$1/$f1$f2'"'
+echo '</command></action></item>'
+#edit conky
+echo '<item label="edit:'
+echo $f2
+echo '"><action name="Execute"><command>'
+echo 'geany '$1/$f1$f2
+echo '</command></action></item>'
+#end of menu
+echo '</menu>'
+done
+#done for pulling folder list
+echo '</menu>'
+done
+echo '<separator label="single configs"/>'
+#pulling conkyrc list from conky folder
+list3="$(ls $1 | grep -F 'conf')"
+for f3 in $list3
+do
+#menu start
+echo '<menu id="'$f3
+echo '" label="'
+echo $f3
+echo '">'
+#conky start
+echo '<item label="start: '
+echo $f3
+echo '"><action name="Execute"><command>'
+echo 'conky -c '$1/$f3
+echo '</command></action></item>'
+#kill conky
+echo '<item label="kill: '
+echo $f3
+echo '"><action name="Execute"><command>'
+echo 'pkill -xf "conky -c '$1/$f3'"'
+echo '</command></action></item>'
+#edit conky
+echo '<item label="edit:'
+echo $f3
+echo '"><action name="Execute"><command>'
+echo 'geany '$1/$f3
+echo '</command></action></item>'
+#end of menu
+echo '</menu>'
+done
+echo "</openbox_pipe_menu>"
+exit
