@@ -10,6 +10,8 @@
 #
 # file manager
 fm='thunar'
+# editor
+ed='thunar'
 #
 # Do not edit lines passed this point unless you know what you are doing
 #
@@ -25,71 +27,88 @@ esac
 # making for loop ignore spaces
 IFS=$(echo -en "\n\b")
 # functions
-function file_logic () {
-if [[ "$1" == *.conf ]]; then echo conky -c \"$2/$1\"
-elif [[ "$1" == *.snes ]]; then echo $snes \"$2/$1\"
-elif [[ "$1" == *.iso ]] || [[ "$1" == *.cue ]]; then
-    mcall $1
-	icall "Playstation 1"
-	    echo $ps1 \"$2$1\"
-	iend
-	icall "Gamecube"
-	    echo $cube \"$2$1\"
-	iend
-	icall "Wii"
-	    echo $wii \"$2$1\"
-	iend
-    mend
-else echo $fm \"$2\" ;fi
-}
-# vars
 id_number=0
 function menu_id () { ((id_number++)) ;}
 function mcall () {
-    menu_id
-    echo '<menu id="Rom_menu_id_'$id_number'" label="'$1'">' ;}
+  menu_id
+  echo '<menu id="Rom_menu_id_'$id_number'" label="'$1'">' ;}
 function mend () { echo '</menu>' ;}
 function icall () { echo '<item label="'$1'"><action name="Execute"><command>' ;}
 function iend () { echo '</command></action></item>' ;}
+function file_logic () {
+if [[ "$1" == *.conf ]]; then
+  echo conky -c \"$2/$1\"
+elif [[ "$1" == *.lua ]]; then
+  echo $ed \"$2/$1\"
+else echo $fm \"$2\" ;fi
+}
+# vars
+function item_logic () {
+if [ $1 == */ ]; then
+  list_logic $1 $2
+else
+  file_logic $1 $2
+fi
+}
+function list_logic () {
+#path management
+if [ $# = 2 ]; then
+  local path_plus=$2
+  case "$path_plus" in
+    */)
+      local -r path_plus=$path_plus$1
+      ;;
+    *)
+      local -r path_plus=$path_plus/$1
+      ;;
+  esac
+else
+  local path_plus=$1
+  case "$path_plus" in
+    */)
+      local -r path_plus=$path_plus
+      ;;
+    *)
+      local -r path_plus=$path_plus/
+      ;;
+  esac
+fi
+#folders
+local list_folders=$(ls -Q1F $path$path_plus | grep -F '/' | awk -F'"' '{print $2}' | awk -F'"' '{print $1}')
+local list_folder
+for list_folder in $list_folders; do
+  mcall $list_folder
+    list_logic $list_folder $path_plus
+  mend
+done
+#items
+local list_items=$(ls -Q1F $path$path_plus | grep -Fv '/' | awk -F'"' '{print $2}' | awk -F'"' '{print $1}')
+for list_item in $list_items; do
+  item_logic $list_item $path_plus
+done
+}
 # start of menu
 echo "<openbox_pipe_menu>"
-#link to path
-icall "Conky Folder"
-echo $fm $path
-iend
-#pulling sub folder list
-echo '<separator label="Grouped Configs"/>'
-list1="$(ls -Q1F $path | grep -F '/' | awk -F'"' '{print $2}' | awk -F'"' '{print $1}')"
-for folder in $list1; do
-mcall $folder
-    #pulling roms list from folders
-    list2="$(ls -Q1F $path$folder | grep -Fv '/' | awk -F'"' '{print $2}' | awk -F'"' '{print $1}')"
-    for file1 in $list2; do
-	if [[ "$file1" == *.bin ]]; then
-	    echo "<!-- '$file1' gets no entry -->"
-	else
-	    icall $file1
-		emulator $file1 $path$folder/
-	    iend
-	fi
-    #done for pulling roms list
-    done
-    #done for pulling folder list
-mend
-done
-echo '<separator label="Single Roms"/>'
-#pulling roms list from main folders
-list3="$(ls -Q1F $path | grep -Fv '/' | awk -F'"' '{print $2}' | awk -F'"' '{print $1}')"
-for file2 in $list3; do
-    if [[ "$file2" == *.bin ]]; then
-	echo "<!-- '$file2' gets no entry -->"
-    else
-	icall $file2
-	    emulator $file2 $path
-	iend
-    fi
-#done for pulling roms list
-done
+  #link to path
+  icall "Conky Folder"
+    echo $fm $path
+  iend
+  #pulling sub folder list
+  echo '<separator label="Grouped Configs"/>'
+  declare -r local list_group=$(ls -Q1F $path | grep -F '/' | awk -F'"' '{print $2}' | awk -F'"' '{print $1}')
+  for folder in $list_group; do
+    mcall $folder
+      list_logic $folder
+    mend
+  #done for pulling folder list
+  done
+  echo '<separator label="Single Configs"/>'
+  #pulling roms list from main folders
+  declare -r local list_single=$(ls -Q1F $path | grep -Fv '/' | awk -F'"' '{print $2}' | awk -F'"' '{print $1}')
+  for file in $list_single; do
+    item_logic $file
+  #done for pulling roms list
+  done
 #end of pipemenu
 echo "</openbox_pipe_menu>"
 exit
