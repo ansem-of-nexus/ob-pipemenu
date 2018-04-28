@@ -8,10 +8,13 @@
 # add to menus like openbox with a like this:
 # <menu execute="script-name /path/to/files/" id="script-name" label="menu name"/>
 #
+# To Do List:
+#	add reset option to conf menu
+#
 # file manager
 fm='thunar'
 # editor
-ed='thunar'
+ed='geany'
 #
 # Do not edit lines passed this point unless you know what you are doing
 #
@@ -31,18 +34,33 @@ id_number=0
 function menu_id () { ((id_number++)) ;}
 function mcall () {
   menu_id
-  echo '<menu id="Rom_menu_id_'$id_number'" label="'$1'">' ;}
+  echo '<menu id="conky_menu_id_'$id_number'" label="'$1'">' ;}
 function mend () { echo '</menu>' ;}
 function icall () { echo '<item label="'$1'"><action name="Execute"><command>' ;}
 function iend () { echo '</command></action></item>' ;}
 function file_logic () {
 if [[ "$1" == *.conf ]]; then
-  echo conky -c \"$2/$1\"
+  mcall $1
+    icall "Start"
+      echo conky -c \"$path$2$1\"
+    iend
+    icall "Kill"
+      echo pkill -xf \'conky -c \"$path$2$1\"\'
+    iend
+    icall "Edit"
+      echo $ed \"$path$2$1\"
+    iend
+  mend
 elif [[ "$1" == *.lua ]]; then
-  echo $ed \"$2/$1\"
-else echo $fm \"$2\" ;fi
+  icall $1
+    echo $ed \"$path$2$1\"
+  iend
+else
+  icall $1
+    echo $fm \"$path$2\"
+  iend
+fi
 }
-# vars
 function item_logic () {
 if [ $1 == */ ]; then
   list_logic $1 $2

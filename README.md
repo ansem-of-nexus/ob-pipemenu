@@ -6,7 +6,6 @@ pipemenus for openbox
 ---
 * **conky-pipemenu**
   - shows file in a folder and sub folders. File commands as of v3 are Run, Kill, and Edit.
-  - current version is v3, v4 is still being made
 ---
 * **moc-pipemenu**
   - shows player status, current song, and player controls. if moc is not running it will only show a start option, otherwise commands are Play/Pause, Next, Previous, and open player, open music folder, kill moc
