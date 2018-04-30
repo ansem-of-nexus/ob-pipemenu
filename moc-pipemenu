@@ -24,8 +24,8 @@ echo "<openbox_pipe_menu>"
     iend
   else
     #show song name
-    #title="$(mocp -Q %file | awk -F'$path' '{Print $2}')"
-    title="$(mocp -Q 'MOC [%state] %song')"
+    title="$(mocp -Q 'MOC [%state]') $(mocp -Q %file | awk -F'/' '{print $NF}')"
+    #~ title="$(mocp -Q 'MOC [%state] %song')"
     echo '<separator label="'$title'"/>'
     #controls
     icall "Play / Pause"
