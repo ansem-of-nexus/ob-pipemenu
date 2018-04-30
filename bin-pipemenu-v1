@@ -1,8 +1,12 @@
 #!/bin/bash
 #
-# add to menus like openbox with:
-# <menu execute="script-name" id="script-name" label="menu item name"/>
-# default editor is geany, to change just replace geany with your prefered editor
+# Known problems:
+#
+#     entries containing a '&' will throw errors. Unknown -
+#     at this time if it's a openbox or script issue
+#
+# add to menus like openbox with a like this:
+# <menu execute="script-name /path/to/files/" id="script-name" label="menu name"/>
 #
 list="$(find ~/Dropbox/bin -maxdepth 2 -type f | sort)"
 echo "<openbox_pipe_menu>"

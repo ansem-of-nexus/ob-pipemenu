@@ -1,7 +1,12 @@
 #!/bin/bash
 #
-# add to menus like openbox with:
-# <menu execute="script-name /path/to/conky" id="script-name" label="menu item name"/>
+# Known problems:
+#
+#     entries containing a '&' will throw errors. Unknown -
+#     at this time if it's a openbox or script issue
+#
+# add to menus like openbox with a like this:
+# <menu execute="script-name /path/to/files/" id="script-name" label="menu name"/>
 #
 echo "<openbox_pipe_menu>"
 echo '<item label="Kill Conky"><action name="Execute"><command>'
