@@ -1,0 +1,69 @@
+#!/bin/bash
+#
+# Known problems:
+#
+#     entries containing a '&' will throw errors. Unknown -
+#     at this time if it's a openbox or script issue
+#
+# add to menus like openbox with a like this:
+# <menu execute="script-name /path/to/files/" id="script-name" label="menu name"/>
+#
+# file manager
+declare -r fm='thunar'
+# editor
+declare -r ed='geany'
+#
+# Do not edit lines passed this point unless you know what you are doing
+#
+case "$1" in
+    */)
+	declare -r path=$1
+	;;
+    *)
+	declare -r path=$1/
+	;;
+esac
+# making for loop ignore spaces
+IFS=$(echo -en "\n\b")
+# vars
+id_number=0
+function menu_id () { ((id_number++)) ;}
+function mcall () {
+    menu_id
+    echo '<menu id="bin_menu_id_'$id_number'" label="'$1'">' ;}
+function mend () { echo '</menu>' ;}
+function icall () { echo '<item label="'$1'"><action name="Execute"><command>' ;}
+function iend () { echo '</command></action></item>' ;}
+# start of pipemenu
+echo "<openbox_pipe_menu>"
+  #link to path
+  icall "Menu Folder"
+    echo $fm $path
+  iend
+  echo '<separator label="Files"/>'
+  list="$(ls -Q1F $1 | grep -Fv '/' | awk -F'"' '{print $2}' | awk -F'"' '{print $1}')"
+  for f1 in $list; do
+  # menu start
+  mcall $f1
+    # file permissions
+    perm_label=$(ls -l $path$f1|awk -F'.' '{print $1}')
+    echo "<separator label=\"$perm_label\"/>"
+    # edit file
+    icall "Edit"
+      echo $ed \"$path$f1\"
+    iend
+    # chmod +x
+    icall "chmod +x"
+      echo chmod +x \"$path$f1\"
+    iend
+    # chmod -x
+    icall "chmod -x"
+      echo chmod -x \"$path$f1\"
+    iend
+  # menu end
+  mend
+  # for end
+  done
+# end of pipemenu
+echo "</openbox_pipe_menu>"
+exit

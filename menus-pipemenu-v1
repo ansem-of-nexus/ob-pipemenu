@@ -1,0 +1,42 @@
+#!/bin/bash
+#
+# add to menus like openbox with:
+# <menu execute="script-name /path/to/scripts" id="script-name" label="menu item name"/>
+#
+# file manager
+declare -r fm='thunar'
+# editor
+declare -r ed='geany'
+#
+# Do not edit lines passed this point unless you know what you are doing
+#
+case "$1" in
+    */)
+	declare -r path=$1
+	;;
+    *)
+	declare -r path=$1/
+	;;
+esac
+# making for loop ignore spaces
+IFS=$(echo -en "\n\b")
+# vars
+function icall () { echo '<item label="'$1'"><action name="Execute"><command>' ;}
+function iend () { echo '</command></action></item>' ;}
+# start of pipemenu
+echo "<openbox_pipe_menu>"
+#link to path
+icall "Menus Folder"
+echo $fm $path
+iend
+echo '<separator label="Files"/>'
+list="$(ls -Q1F $1 | grep -Fv '/' | awk -F'"' '{print $2}' | awk -F'"' '{print $1}')"
+for f1 in $list; do
+icall $f1
+echo $ed \"$path/$f1\"
+iend
+# for end
+done
+# end of pipemenu
+echo "</openbox_pipe_menu>"
+exit
