@@ -1,0 +1,259 @@
+#!/bin/bash
+#
+# Known problems:
+#
+#     entries containing a '&' will throw errors. Unknown -
+#     at this time if it's a openbox or script issue
+#
+# add to menus like openbox with a like this:
+# <menu execute="/path/to/script /path/to/script 'connection info'" id="script-name" label="menu name"/>
+#
+# to do:
+# optomize string parsing if possible
+# add switch to change from full list to only active
+#
+declare -r download_limits=(0 10 100 1000)
+declare -r upload_limits=(0 1 10 100)
+#
+# Don't edit past this line unless you know what you are doing
+#
+# making for loop ignore spaces
+IFS=$(echo -en "\n\b")
+# locking script path
+if [ -f "$1" ]; then declare -r path=$1; else declare -r path=""; fi
+# locking connection info
+declare -r connection=$2
+# functions
+if [ -z $4 ]; then id_number=0; else id_number=$4; fi
+function menu_id () { ((id_number++)) ;}
+function mcall () {
+  menu_id
+  echo '<menu id="transmission_menu_id_'$id_number'" label="'$1'">' ;}
+function mend () { echo '</menu>' ;}
+function icall () { echo '<item label="'$1'"><action name="Execute"><command>' ;}
+function iend () { echo '</command></action></item>' ;}
+function seperator () {
+  if [ -z $1 ]; then
+  echo '<separator/>'
+  else
+  echo '<separator label="'$1'"/>'
+  fi ;}
+function pcall () {
+  menu_id
+  echo '<menu execute="'$path' '$path' '$connection' '$2' '$3'" id="transmission_menu_id_'$id_number'" label="'$1'"/>' ;}
+function lpull () {
+  # pulling id list
+  t_id=$(transmission-remote $connection -l|awk -F' ' '{print $1}')
+  t_name=$(transmission-remote $connection -l|cut -c 71-)
+  # name sanitatizing
+  t_name=("${t_name[@]/&/%26}")
+  }
+function tpull () {
+  t=$(transmission-remote $connection -t $1 -i)
+  t_status=$(echo $t | awk -F'State:' '{print $2}' | awk -F'Location:' '{print $1}' | xargs)
+  #connection
+  t_perc=$(echo $t | awk -F'Percent Done:' '{print $2}' | awk -F'ETA:' '{print $1}' | xargs)
+  t_avalible=$(echo $t | awk -F'Availability:' '{print $2}' | awk -F'Total size:' '{print $1}' | xargs)
+  t_eta=$(echo $t | awk -F'ETA:' '{print $2}' | awk -F'Download Speed:' '{print $1}' | xargs)
+  t_down=$(echo $t | awk -F'Download Speed:' '{print $2}' | awk -F'Upload Speed:' '{print $1}' | xargs)
+  t_up=$(echo $t | awk -F'Upload Speed:' '{print $2}' | awk -F'Have:' '{print $1}' | xargs)
+  t_dlimit=$(echo $t | awk -F'Download Limit:' '{print $2}' | awk -F'Upload Limit:' '{print $1}' | xargs)
+  t_ulimit=$(echo $t | awk -F'Upload Limit:' '{print $2}' | awk -F'Ratio Limit:' '{print $1}' | xargs)
+  #general
+  t_added=$(echo $t | awk -F'Date added:' '{print $2}' | awk -F'Date' '{print $1}' | xargs)
+  t_size=$(echo $t | awk -F'Total size: ' '{print $2}' | cut -d' ' -f -2)
+  t_path=$(echo $t | awk -F'Location:' '{print $2}' | awk -F'Percent Done:' '{print $1}' | xargs)
+  t_sr=$(echo $t | awk -F'Ratio Limit:' '{print $2}' | awk -F'Honors Session Limits:' '{print $1}' | xargs)
+  t_hl=$(echo $t | awk -F'Honors Session Limits:' '{print $2}' | awk -F'Peer limit:' '{print $1}' | xargs)
+}
+function spull () {
+  # getting server information
+  s=$(transmission-remote $connection -si)
+  s_tstatus=$(echo $s | awk -F'Upload speed limit:' '{print $2}' | awk -F'; ' '{print $2}' | awk -F'turtle' '{print $1}' | xargs)
+  s_dir=$(echo $s | awk -F'Download directory:' '{print $2}' | awk -F'Listenport:' '{print $1}' | xargs)
+  s_sr=$(echo $s | awk -F'Default seed ratio limit: ' '{print $2}' | awk -F' Upload speed limit:' '{print $1}' | xargs)
+  # upload information
+  s_gulimit_current=$(echo $s | awk -F'Upload speed limit:' '{print $2}' | cut -d'(' -f -1 | xargs)
+  s_gulimit_normal=$(echo $s | awk -F'Upload speed limit:' '{print $2}' | awk -F'limit:' '{print $2}' | cut -d';' -f -1 | xargs)
+  s_gulimit_turtle=$(echo $s | awk -F'Upload speed limit:' '{print $2}' | awk -F'turtle limit:' '{print $2}' | cut -d')' -f -1 | xargs)
+  s_gulimit_status=$(echo $s | awk -F'Upload speed limit:' '{print $2}' | cut -d\( -f2- | awk -F'limit:' '{print $1}' | xargs)
+  # download information
+  s_gdlimit_current=$(echo $s | awk -F'Download speed limit:' '{print $2}' | cut -d'(' -f -1 | xargs)
+  s_gdlimit_normal=$(echo $s | awk -F'Download speed limit:' '{print $2}' | awk -F'limit:' '{print $2}' | cut -d';' -f -1 | xargs)
+  s_gdlimit_turtle=$(echo $s | awk -F'Download speed limit:' '{print $2}' | awk -F'turtle limit:' '{print $2}' | cut -d')' -f -1 | xargs)
+  s_gdlimit_status=$(echo $s | awk -F'Download speed limit:' '{print $2}' | cut -d\( -f2- | awk -F'limit:' '{print $1}' | xargs)
+  }
+function tsec () {
+  # status
+  seperator "Status: $t_status"
+  # controls
+  if [ $t_status = "Paused" ] || [ $t_status = "Finished" ] || [ $t_status = "Stopped" ]; then
+    icall "Start Torrent"
+      echo "transmission-remote $connection -t $1 -s"
+    iend
+  else
+    icall "Stop Torrent"
+      echo "transmission-remote $connection -t $1 -S"
+    iend
+  fi #if [[ $t_status = "Paused" ]]; then
+  mcall "Remove Torrent"
+    icall "Yes"
+      echo "transmission-remote $connection -t $1 -r"
+    iend
+  mend
+  mcall "Remove Torrent and Data"
+    icall "yes"
+      echo "transmission-remote $connection -t $1 -rad"
+    iend
+  mend
+  mcall "Down Limit: $t_dlimit"
+    icall "Disable Limit"
+      echo "transmission-remote $connection -t $1 -D"
+    iend
+    for i in "${download_limits[@]}"; do
+      icall "Set to $i KB/s"
+	echo "transmission-remote $connection -t $1 -d $i"
+      iend
+    done
+    unset i #sanatizing i
+  mend
+  mcall "Up Limit: $t_ulimit"
+    icall "Disable Limit"
+      echo "transmission-remote $connection -t $1 -U"
+    iend
+    for i in "${upload_limits[@]}"; do
+      icall "Set to $i KB/s"
+	echo "transmission-remote $connection -t $1 -u $i"
+      iend
+    done
+    unset i #sanatizing i
+  mend
+  icall "Honor Limits: $t_hl"
+    if [ $t_hl = "No" ]; then
+      echo "transmission-remote $connection -t $1 -hl"
+    else
+      echo "transmission-remote $connection -t $1 -HL"
+    fi
+  iend
+  seperator
+  # connection info downloading
+  icall "Have/Avalible: $t_perc / $t_avalible"; echo "echo ''"; iend
+  icall "ETA: $t_eta"; echo "echo ''"; iend
+  icall "Down/Up: $t_down / $t_up"; echo "echo ''"; iend
+  # general info
+  mcall "General Info"
+    icall "Added: $t_added"; echo "echo ''"; iend
+    icall "Total Size: $t_size"; echo "echo ''"; iend
+    icall "Seed Ratio: $t_sr"; echo "echo ''"; iend
+    icall "Path: $t_path"; echo "echo ''"; iend
+  mend
+  }
+if [ $# -gt 2 ]; then
+  #single torrent pipemenu
+  echo "<openbox_pipe_menu>"
+    menu_id #ticking menu_id for pcall
+    tpull $3
+    tsec $3
+  echo "</openbox_pipe_menu>"
+else
+  spull
+  # start of menu
+  echo "<openbox_pipe_menu>"
+    if [ -z $connection ]; then
+      seperator "Connected to localhost"
+    else
+      seperator "Connected to $connection"
+    fi #if [ -z $connection ]; then
+    icall "Global Down Limit: $s_gdlimit_status"; echo "echo ''"; iend
+    icall "Global Up Limit: $s_gulimit_status"; echo "echo ''"; iend
+    icall "Turtle Status: $s_tstatus"; echo "echo ''"; iend
+    icall "Default Dir: $s_dir"; echo "echo ''"; iend
+    mcall "Transmission Controls"
+      if [ $s_tstatus = "Disabled" ]; then
+	icall "Enable Turtle"
+	  echo "transmission-remote $connection -as"
+	iend
+      else
+	icall "Disable Turtle"
+	  echo "transmission-remote $connection -AS"
+	iend
+      fi #if [[ $s_tstauts = "Disable" ]]; then
+      seperator "Current Down Limit: $s_gdlimit_current"
+      mcall "Global Down Limit: $s_gdlimit_normal"
+	icall "Disable"
+	  echo "transmission-remote $connection -D"
+	iend
+	for i in "${download_limits[@]}"; do
+	  icall "Set to $i KB/s"
+	    echo "transmission-remote $connection -d $i"
+	  iend
+	done
+	unset i #sanatizing i
+      mend
+      mcall "Turtle Down Limit: $s_gdlimit_turtle"
+	for i in "${download_limits[@]}"; do
+	  icall "Set to $i KB/s"
+	    echo "transmission-remote $connection -d $i"
+	  iend
+	done
+	unset i #sanatizing i
+      mend
+      seperator "Current Up Limit: $s_gulimit_current"
+      mcall "Global Up Limit: $s_gulimit_normal"
+	icall "Disable"
+	  echo "transmission-remote $connection -D"
+	iend
+	for i in "${upload_limits[@]}"; do
+	  icall "Set to $i KB/s"
+	    echo "transmission-remote $connection -u $l"
+	  iend
+	done
+	unset i #sanatizing i
+      mend
+      mcall "Turtle Up Limit: $s_gdlimit_turtle"
+	for i in "${upload_limits[@]}"; do
+	  icall "Set to $i KB/s"
+	    echo "transmission-remote $connection -u $i"
+	  iend
+	done
+	unset i #sanatizing i
+      mend
+      seperator
+      icall "Transmission Shutdown"
+	echo "transmission-remote $connection --exit"
+      iend
+    mend
+    seperator "Torrents"
+    lpull
+    if [ -z "$path" ]; then
+# path to pipemenu was not given, requests for all torrents will be run at time of menu creation
+      #pull all information at beginning
+      for_number=2
+      for i in $t_name; do
+	if [[ ! $i = "Name" ]]; then
+	  f_id=$(echo $t_id|cut -d' ' -f $for_number)
+	  tpull $f_id
+	  mcall "id $f_id: $i"
+	    tsec $f_id
+	  mend
+	  ((for_number++))
+	fi #if [[ $i = *[[:digit:]]* ]]; then
+      done #for i in $t_id; do
+      unset i #sanatizing i
+    else #if [[ -z "$path" ]]; then
+# path to pipemenu was given, requests for all torrents will be run at time of selection
+      for_number=2
+      for i in $t_name; do
+	if [[ ! $i = "Name" ]]; then
+	  f_id=$(echo $t_id|cut -d' ' -f $for_number)
+	  pcall "id $f_id: $i" $f_id $id_number
+	  for i in {1..5}; do menu_id; done; unset i #ticking menu_id for pcall
+	  ((for_number++))
+	fi #if [[ $i = *[[:digit:]]* ]]; then
+      done #for i in $t_id; do
+      unset i #sanatizing i
+    fi #if [[ -z "$path" ]]; then
+  #end of pipemenu
+  echo "</openbox_pipe_menu>"
+fi #if [ $# -lt 3 ]; then
+exit 0
