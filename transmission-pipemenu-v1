@@ -46,7 +46,7 @@ function lpull () {
   t_id=$(transmission-remote $connection -l|awk -F' ' '{print $1}')
   t_name=$(transmission-remote $connection -l|cut -c 71-)
   # name sanitatizing
-  t_name=("${t_name[@]/&/%26}")
+  t_name=("${t_name[@]/&/&amp;}")
   }
 function tpull () {
   t=$(transmission-remote $connection -t $1 -i)
