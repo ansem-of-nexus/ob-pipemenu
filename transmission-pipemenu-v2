@@ -191,7 +191,7 @@ else
     icall "Turtle Status: $s_tstatus"; echo "echo ''"; iend
     icall "Default Dir: $s_dir"; echo "echo ''"; iend
     mcall "Transmission Controls"
-      if [ $s_tstatus = "Disabled" ]; then
+      if [[ $s_tstatus = Dis* ]]; then
 	icall "Enable Turtle"
 	  echo "transmission-remote $connection -as"
 	iend
