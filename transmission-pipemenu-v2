@@ -5,6 +5,8 @@
 #
 # to do:
 # add switch to change from full list to only active
+# add more characters to the escaped list
+#	sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g; s/'"'"'/\&#39;/g'
 #
 declare -r download_limits=(0 10 100 1000)
 declare -r upload_limits=(0 1 10 100)
@@ -213,7 +215,7 @@ else
       mcall "Turtle Down Limit: $s_gdlimit_turtle"
 	for i in "${download_limits[@]}"; do
 	  icall "Set to $i KB/s"
-	    echo "transmission-remote $connection -d $i"
+	    echo "transmission-remote $connection -asd $i"
 	  iend
 	done
 	unset i #sanatizing i
@@ -230,10 +232,10 @@ else
 	done
 	unset i #sanatizing i
       mend
-      mcall "Turtle Up Limit: $s_gdlimit_turtle"
+      mcall "Turtle Up Limit: $s_gulimit_turtle"
 	for i in "${upload_limits[@]}"; do
 	  icall "Set to $i KB/s"
-	    echo "transmission-remote $connection -u $i"
+	    echo "transmission-remote $connection -asu $i"
 	  iend
 	done
 	unset i #sanatizing i
@@ -250,7 +252,12 @@ else
       t_id=${l::4}
       t_id=${t_id// /}
       t_name=${l:70}
+      # sanatizing name
+      t_name=("${t_name/</&lt;}")
       t_name=("${t_name/&/&amp;}")
+      t_name=("${t_name/>/&gt;}")
+      t_name=("${t_name/\"/&quot;}")
+      t_name=("${t_name/'/&apos;}")
       if [ -z "$path" ]; then
 	# path to pipemenu was not given, requests for all torrents will be run at time of menu creation
 	  if [[ ! $t_id = "ID" ]] && [[ ! $t_id = "Sum:" ]]; then
