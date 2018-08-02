@@ -253,11 +253,11 @@ else
       t_id=${t_id// /}
       t_name=${l:70}
       # sanatizing name
-      t_name=("${t_name/</&lt;}")
-      t_name=("${t_name/&/&amp;}")
-      t_name=("${t_name/>/&gt;}")
-      t_name=("${t_name/\"/&quot;}")
-      t_name=("${t_name/'/&apos;}")
+      t_name=("${t_name//</&lt;}")
+      t_name=("${t_name//&/&amp;}")
+      t_name=("${t_name//>/&gt;}")
+      t_name=("${t_name//\"/&quot;}")
+      t_name=("${t_name//\'/&apos;}")
       if [ -z "$path" ]; then
 	# path to pipemenu was not given, requests for all torrents will be run at time of menu creation
 	  if [[ ! $t_id = "ID" ]] && [[ ! $t_id = "Sum:" ]]; then
