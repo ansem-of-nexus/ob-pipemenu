@@ -24,15 +24,40 @@ if [ -z $4 ]; then id_number=0; else id_number=$4; fi
 function menu_id () { ((id_number++)) ;}
 function mcall () {
   menu_id
-  echo '<menu id="transmission_menu_id_'$id_number'" label="'$1'">' ;}
+  local label="$1"
+  # sanatizing name
+  label=("${label//</&lt;}")
+  label=("${label//&/&amp;}")
+  label=("${label//>/&gt;}")
+  label=("${label//\"/&quot;}")
+  label=("${label//\'/&apos;}")
+  label=("${label//_'/__}")
+  echo '<menu id="Rom_menu_id_'$id_number'" label="'$label'">' ;}
 function mend () { echo '</menu>' ;}
-function icall () { echo '<item label="'$1'"><action name="Execute"><command>' ;}
+function icall () {
+  local label="$1"
+  # sanatizing name
+  label=("${label//</&lt;}")
+  label=("${label//&/&amp;}")
+  label=("${label//>/&gt;}")
+  label=("${label//\"/&quot;}")
+  label=("${label//\'/&apos;}")
+  label=("${label//_'/__}")
+  echo '<item label="'$label'"><action name="Execute"><command>' ;}
 function iend () { echo '</command></action></item>' ;}
 function seperator () {
   if [ -z $1 ]; then
   echo '<separator/>'
   else
-  echo '<separator label="'$1'"/>'
+  local label="$1"
+  # sanatizing name
+  label=("${label//</&lt;}")
+  label=("${label//&/&amp;}")
+  label=("${label//>/&gt;}")
+  label=("${label//\"/&quot;}")
+  label=("${label//\'/&apos;}")
+  label=("${label//_'/__}")
+  echo '<separator label="'$label'"/>'
   fi ;}
 function pcall () {
   menu_id
@@ -252,12 +277,6 @@ else
       t_id=${l::4}
       t_id=${t_id// /}
       t_name=${l:70}
-      # sanatizing name
-      t_name=("${t_name//</&lt;}")
-      t_name=("${t_name//&/&amp;}")
-      t_name=("${t_name//>/&gt;}")
-      t_name=("${t_name//\"/&quot;}")
-      t_name=("${t_name//\'/&apos;}")
       if [ -z "$path" ]; then
 	# path to pipemenu was not given, requests for all torrents will be run at time of menu creation
 	  if [[ ! $t_id = "ID" ]] && [[ ! $t_id = "Sum:" ]]; then

@@ -17,8 +17,31 @@ case "$1" in
     declare -r path=$1/
     ;;
 esac
-function icall () { echo '<item label="'$1'"><action name="Execute"><command>' ;}
+function icall () {
+  local label="$1"
+  # sanatizing name
+  label=("${label//</&lt;}")
+  label=("${label//&/&amp;}")
+  label=("${label//>/&gt;}")
+  label=("${label//\"/&quot;}")
+  label=("${label//\'/&apos;}")
+  label=("${label//_'/__}")
+  echo '<item label="'$label'"><action name="Execute"><command>' ;}
 function iend () { echo '</command></action></item>' ;}
+function seperator () {
+  if [ -z $1 ]; then
+  echo '<separator/>'
+  else
+  local label="$1"
+  # sanatizing name
+  label=("${label//</&lt;}")
+  label=("${label//&/&amp;}")
+  label=("${label//>/&gt;}")
+  label=("${label//\"/&quot;}")
+  label=("${label//\'/&apos;}")
+  label=("${label//_'/__}")
+  echo '<separator label="'$label'"/>'
+  fi ;}
 # start of menu
 echo "<openbox_pipe_menu>"
   status=$(pidof mocp)
@@ -31,7 +54,7 @@ echo "<openbox_pipe_menu>"
     #show song name
     title="$(mocp -Q 'MOC [%state]') $(mocp -Q %file | awk -F'/' '{print $NF}')"
     #~ title="$(mocp -Q 'MOC [%state] %song')"
-    echo '<separator label="'$title'"/>'
+    separator "$title"
     #controls
     icall "Play / Pause"
       echo "mocp -G"

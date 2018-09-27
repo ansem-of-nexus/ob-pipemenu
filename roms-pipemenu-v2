@@ -44,10 +44,27 @@ id_number=0
 path_plus=""
 function menu_id () { ((id_number++)) ;}
 function mcall () {
-    menu_id
-    echo '<menu id="Rom_menu_id_'$id_number'" label="'$1'">' ;}
+  menu_id
+  local label="$1"
+  # sanatizing name
+  label=("${label//</&lt;}")
+  label=("${label//&/&amp;}")
+  label=("${label//>/&gt;}")
+  label=("${label//\"/&quot;}")
+  label=("${label//\'/&apos;}")
+  label=("${label//_'/__}")
+  echo '<menu id="Rom_menu_id_'$id_number'" label="'$label'">' ;}
 function mend () { echo '</menu>' ;}
-function icall () { echo '<item label="'$1'"><action name="Execute"><command>' ;}
+function icall () {
+  local label="$1"
+  # sanatizing name
+  label=("${label//</&lt;}")
+  label=("${label//&/&amp;}")
+  label=("${label//>/&gt;}")
+  label=("${label//\"/&quot;}")
+  label=("${label//\'/&apos;}")
+  label=("${label//_'/__}")
+  echo '<item label="'$label'"><action name="Execute"><command>' ;}
 function iend () { echo '</command></action></item>' ;}
 function file_logic () {
 if [[ "${1,,}" = *.nes ]]; then
