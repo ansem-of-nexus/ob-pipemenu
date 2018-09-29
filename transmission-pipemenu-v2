@@ -158,7 +158,7 @@ function tsec () {
     iend
     for i in "${download_limits[@]}"; do
       icall "Set to $i KB/s"
-	echo "transmission-remote $connection -t $1 -d $i"
+        echo "transmission-remote $connection -t $1 -d $i"
       iend
     done
     unset i #sanatizing i
@@ -169,7 +169,7 @@ function tsec () {
     iend
     for i in "${upload_limits[@]}"; do
       icall "Set to $i KB/s"
-	echo "transmission-remote $connection -t $1 -u $i"
+        echo "transmission-remote $connection -t $1 -u $i"
       iend
     done
     unset i #sanatizing i
@@ -217,57 +217,57 @@ else
     icall "Default Dir: $s_dir"; echo "echo ''"; iend
     mcall "Transmission Controls"
       if [[ $s_tstatus = Dis* ]]; then
-	icall "Enable Turtle"
-	  echo "transmission-remote $connection -as"
-	iend
+        icall "Enable Turtle"
+          echo "transmission-remote $connection -as"
+        iend
       else
-	icall "Disable Turtle"
-	  echo "transmission-remote $connection -AS"
-	iend
+        icall "Disable Turtle"
+          echo "transmission-remote $connection -AS"
+        iend
       fi #if [[ $s_tstauts = "Disable" ]]; then
       seperator "Current Down Limit: $s_gdlimit_current"
       mcall "Global Down Limit: $s_gdlimit_normal"
-	icall "Disable"
-	  echo "transmission-remote $connection -D"
-	iend
-	for i in "${download_limits[@]}"; do
-	  icall "Set to $i KB/s"
-	    echo "transmission-remote $connection -d $i"
-	  iend
-	done
-	unset i #sanatizing i
+        icall "Disable"
+          echo "transmission-remote $connection -D"
+        iend
+        for i in "${download_limits[@]}"; do
+          icall "Set to $i KB/s"
+            echo "transmission-remote $connection -d $i"
+          iend
+        done
+        unset i #sanatizing i
       mend
       mcall "Turtle Down Limit: $s_gdlimit_turtle"
-	for i in "${download_limits[@]}"; do
-	  icall "Set to $i KB/s"
-	    echo "transmission-remote $connection -asd $i"
-	  iend
-	done
-	unset i #sanatizing i
+        for i in "${download_limits[@]}"; do
+          icall "Set to $i KB/s"
+            echo "transmission-remote $connection -asd $i"
+          iend
+        done
+        unset i #sanatizing i
       mend
       seperator "Current Up Limit: $s_gulimit_current"
       mcall "Global Up Limit: $s_gulimit_normal"
-	icall "Disable"
-	  echo "transmission-remote $connection -D"
-	iend
-	for i in "${upload_limits[@]}"; do
-	  icall "Set to $i KB/s"
-	    echo "transmission-remote $connection -u $l"
-	  iend
-	done
-	unset i #sanatizing i
+        icall "Disable"
+          echo "transmission-remote $connection -D"
+        iend
+        for i in "${upload_limits[@]}"; do
+          icall "Set to $i KB/s"
+            echo "transmission-remote $connection -u $l"
+          iend
+        done
+        unset i #sanatizing i
       mend
       mcall "Turtle Up Limit: $s_gulimit_turtle"
-	for i in "${upload_limits[@]}"; do
-	  icall "Set to $i KB/s"
-	    echo "transmission-remote $connection -asu $i"
-	  iend
-	done
-	unset i #sanatizing i
+        for i in "${upload_limits[@]}"; do
+          icall "Set to $i KB/s"
+            echo "transmission-remote $connection -asu $i"
+          iend
+        done
+        unset i #sanatizing i
       mend
       seperator
       icall "Transmission Shutdown"
-	echo "transmission-remote $connection --exit"
+        echo "transmission-remote $connection --exit"
       iend
     mend
     seperator "Torrents"
@@ -278,19 +278,19 @@ else
       t_id=${t_id// /}
       t_name=${l:70}
       if [ -z "$path" ]; then
-	# path to pipemenu was not given, requests for all torrents will be run at time of menu creation
-	  if [[ ! $t_id = "ID" ]] && [[ ! $t_id = "Sum:" ]]; then
-	    tpull $t_id
-	    mcall "id $t_id: $t_name"
-	      tsec $t_id
-	    mend
-	  fi #if [[ ! $t_id = "ID" ]] && [[ ! $t_id = "Sum:" ]]; then
+        # path to pipemenu was not given, requests for all torrents will be run at time of menu creation
+        if [[ ! $t_id = "ID" ]] && [[ ! $t_id = "Sum:" ]]; then
+          tpull $t_id
+          mcall "id $t_id: $t_name"
+            tsec $t_id
+          mend
+        fi #if [[ ! $t_id = "ID" ]] && [[ ! $t_id = "Sum:" ]]; then
       else #if [[ -z "$path" ]]; then
-	# path to pipemenu was given, requests for all torrents will be run at time of selection
-	if [[ ! $t_id = "ID" ]] && [[ ! $t_id = "Sum:" ]]; then
-	  pcall "id $t_id: $t_name" $t_id $id_number
-	  for t in {1..5}; do menu_id; done; unset t #ticking menu_id for pcall
-	fi #if [[ ! $t_id = "ID" ]] && [[ ! $t_id = "Sum:" ]]; then
+        # path to pipemenu was given, requests for all torrents will be run at time of selection
+        if [[ ! $t_id = "ID" ]] && [[ ! $t_id = "Sum:" ]]; then
+          pcall "id $t_id: $t_name" $t_id $id_number
+          for t in {1..5}; do menu_id; done; unset t #ticking menu_id for pcall
+        fi #if [[ ! $t_id = "ID" ]] && [[ ! $t_id = "Sum:" ]]; then
       fi #if [[ -z "$path" ]]; then
     done <<< $(transmission-remote $connection -l)
     unset i #sanatizing i
