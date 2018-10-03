@@ -52,7 +52,7 @@ function mcall () {
   label=("${label//>/&gt;}")
   label=("${label//\"/&quot;}")
   label=("${label//\'/&apos;}")
-  label=("${label//_'/__}")
+  label=("${label//\_/__}")
   echo '<menu id="Rom_menu_id_'$id_number'" label="'$label'">' ;}
 function mend () { echo '</menu>' ;}
 function icall () {
@@ -63,7 +63,7 @@ function icall () {
   label=("${label//>/&gt;}")
   label=("${label//\"/&quot;}")
   label=("${label//\'/&apos;}")
-  label=("${label//_'/__}")
+  label=("${label//_/__}")
   echo '<item label="'$label'"><action name="Execute"><command>' ;}
 function iend () { echo '</command></action></item>' ;}
 function file_logic () {
@@ -99,39 +99,30 @@ else
   icall $1; echo $fm \"$path$2\"; iend
 fi
 }
-function item_logic () {
-if [ $1 == */ ]; then
-  list_logic $1 $2
-else
-  file_logic $1 $2
-fi
-}
 function list_logic () {
+local path_plus=""
 #path management
-if [ $# = 2 ]; then
-  local path_plus=$2
-  case "$path_plus" in
+case "$1" in
+  */)
+    addition=$1
+    ;;
+  *)
+    addition=$1/
+    ;;
+esac
+if [ ! $2 == "" ]; then
+  case "$2" in
     */)
-      local -r path_plus=$path_plus$1
+      path_plus=$2
       ;;
     *)
-      local -r path_plus=$path_plus/$1
-      ;;
-  esac
-else
-  local path_plus=$1
-  case "$path_plus" in
-    */)
-      local -r path_plus=$path_plus
-      ;;
-    *)
-      local -r path_plus=$path_plus/
+      path_plus=$2/
       ;;
   esac
 fi
+path_plus=$path_plus$addition
 #folders
 local list_folders=$(ls -Q1F $path$path_plus | grep -F '/' | awk -F'"' '{print $2}' | awk -F'"' '{print $1}')
-local list_folder
 for list_folder in $list_folders; do
   mcall $list_folder
     list_logic $list_folder $path_plus
@@ -140,7 +131,7 @@ done
 #items
 local list_items=$(ls -Q1F $path$path_plus | grep -Fv '/' | awk -F'"' '{print $2}' | awk -F'"' '{print $1}')
 for list_item in $list_items; do
-  item_logic $list_item $path_plus
+  file_logic $list_item $path_plus
 done
 }
 # start of menu
@@ -176,7 +167,7 @@ echo "<openbox_pipe_menu>"
   #pulling roms list from main folders
   declare -r local list_single=$(ls -Q1F $path | grep -Fv '/' | awk -F'"' '{print $2}' | awk -F'"' '{print $1}')
   for file in $list_single; do
-    item_logic $file
+    file_logic $file
   #done for pulling roms list
   done
 #end of pipemenu
