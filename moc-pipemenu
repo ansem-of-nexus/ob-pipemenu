@@ -25,11 +25,11 @@ function icall () {
   label=("${label//>/&gt;}")
   label=("${label//\"/&quot;}")
   label=("${label//\'/&apos;}")
-  label=("${label//_'/__}")
+  label=("${label//_/__}")
   echo '<item label="'$label'"><action name="Execute"><command>' ;}
 function iend () { echo '</command></action></item>' ;}
-function seperator () {
-  if [ -z $1 ]; then
+function separator () {
+  if [ -z "$*" ]; then
   echo '<separator/>'
   else
   local label="$1"
@@ -39,7 +39,7 @@ function seperator () {
   label=("${label//>/&gt;}")
   label=("${label//\"/&quot;}")
   label=("${label//\'/&apos;}")
-  label=("${label//_'/__}")
+  label=("${label//_/__}")
   echo '<separator label="'$label'"/>'
   fi ;}
 # start of menu
@@ -65,7 +65,7 @@ echo "<openbox_pipe_menu>"
     icall "Previous"
       echo "mocp -r"
     iend
-    echo '<separator/>'
+    separator
     #open music player
     icall "Open MOCP"
       echo 'terminator -T "MOCP" -e "mocp"'
