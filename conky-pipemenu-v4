@@ -41,7 +41,7 @@ function mcall () {
   label=("${label//>/&gt;}")
   label=("${label//\"/&quot;}")
   label=("${label//\'/&apos;}")
-  label=("${label//_'/__}")
+  label=("${label//_/__}")
   echo '<menu id="Rom_menu_id_'$id_number'" label="'$label'">' ;}
 function mend () { echo '</menu>' ;}
 function icall () {
@@ -52,9 +52,23 @@ function icall () {
   label=("${label//>/&gt;}")
   label=("${label//\"/&quot;}")
   label=("${label//\'/&apos;}")
-  label=("${label//_'/__}")
+  label=("${label//_/__}")
   echo '<item label="'$label'"><action name="Execute"><command>' ;}
 function iend () { echo '</command></action></item>' ;}
+function seperator () {
+  if [ -z $1 ]; then
+  echo '<separator/>'
+  else
+  local label="$1"
+  # sanatizing name
+  label=("${label//</&lt;}")
+  label=("${label//&/&amp;}")
+  label=("${label//>/&gt;}")
+  label=("${label//\"/&quot;}")
+  label=("${label//\'/&apos;}")
+  label=("${label//_/__}")
+  echo '<separator label="'$label'"/>'
+  fi ;}
 function file_logic () {
 if [[ "$1" == *.conf ]]; then
   mcall $1

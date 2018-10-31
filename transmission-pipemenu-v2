@@ -31,7 +31,7 @@ function mcall () {
   label=("${label//>/&gt;}")
   label=("${label//\"/&quot;}")
   label=("${label//\'/&apos;}")
-  label=("${label//_'/__}")
+  label=("${label//_/__}")
   echo '<menu id="Rom_menu_id_'$id_number'" label="'$label'">' ;}
 function mend () { echo '</menu>' ;}
 function icall () {
@@ -42,7 +42,7 @@ function icall () {
   label=("${label//>/&gt;}")
   label=("${label//\"/&quot;}")
   label=("${label//\'/&apos;}")
-  label=("${label//_'/__}")
+  label=("${label//_/__}")
   echo '<item label="'$label'"><action name="Execute"><command>' ;}
 function iend () { echo '</command></action></item>' ;}
 function seperator () {
@@ -56,7 +56,7 @@ function seperator () {
   label=("${label//>/&gt;}")
   label=("${label//\"/&quot;}")
   label=("${label//\'/&apos;}")
-  label=("${label//_'/__}")
+  label=("${label//_/__}")
   echo '<separator label="'$label'"/>'
   fi ;}
 function pcall () {
