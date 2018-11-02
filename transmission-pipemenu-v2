@@ -61,7 +61,15 @@ function seperator () {
   fi ;}
 function pcall () {
   menu_id
-  echo '<menu execute="'$path' '$path' '$connection' '$2' '$3'" id="transmission_menu_id_'$id_number'" label="'$1'"/>' ;}
+  local label="$1"
+  # sanatizing name
+  label=("${label//</&lt;}")
+  label=("${label//&/&amp;}")
+  label=("${label//>/&gt;}")
+  label=("${label//\"/&quot;}")
+  label=("${label//\'/&apos;}")
+  label=("${label//_/__}")
+  echo '<menu execute="'$path' '$path' '$connection' '$2' '$3'" id="transmission_menu_id_'$id_number'" label="'$label'"/>' ;}
 function spull () {
   # getting server information
   s="$(transmission-remote $connection -si)"
