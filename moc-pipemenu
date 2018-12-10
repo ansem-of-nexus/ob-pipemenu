@@ -26,6 +26,11 @@ function icall () {
   label=("${label//\"/&quot;}")
   label=("${label//\'/&apos;}")
   label=("${label//_/__}")
+    if [ -z "$2" ]; then
+      label=$label"_"
+    else
+      label=("${label/$2/_$2}")
+    fi
   echo '<item label="'$label'"><action name="Execute"><command>' ;}
 function iend () { echo '</command></action></item>' ;}
 function separator () {
@@ -56,18 +61,18 @@ echo "<openbox_pipe_menu>"
     #~ title="$(mocp -Q 'MOC [%state] %song')"
     separator "$title"
     #controls
-    icall "Play / Pause"
+    icall "Play / Pause" "P"
       echo "mocp -G"
     iend
-    icall "Next"
+    icall "Next" "N"
       echo "mocp -f"
     iend
-    icall "Previous"
+    icall "Back" "B"
       echo "mocp -r"
     iend
     separator
     #open music player
-    icall "Open MOCP"
+    icall "Open MOCP" "O"
       echo 'terminator -T "MOCP" -e "mocp"'
     iend
     #link to path
