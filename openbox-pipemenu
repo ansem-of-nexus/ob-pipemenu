@@ -3,10 +3,10 @@
 # add to menus like openbox with a like this:
 # <menu execute="/path/to/script -p /path/to/stuff" id="menu id" label="menu name"/>
 #
-# file manager
+# setting software
 declare -r fm='thunar'
 declare -r ed='geany'
-declare -r te='terminator'
+declare -r te='terminator -x'
 #
 # Don't edit past this line unless you know what you are doing
 #
@@ -67,11 +67,12 @@ function mcall () {
   label=("${label//\"/&quot;}")
   label=("${label//\'/&apos;}")
   label=("${label//_/__}")
-    if [ -z "$2" ]; then
-      label=$label"_"
-    else
-      label=("${label/$2/_$2}")
-    fi
+  #hotkey management
+  if [ -z "$2" ]; then
+    label=$label"_"
+  else
+    label=("${label/$2/_$2}")
+  fi
   echo '<menu id="Rom_menu_id_'$id_number'" label="'$label'">' ;}
 function mend () { echo '</menu>' ;}
 function icall () {
@@ -83,11 +84,12 @@ function icall () {
   label=("${label//\"/&quot;}")
   label=("${label//\'/&apos;}")
   label=("${label//_/__}")
-    if [ -z "$2" ]; then
-      label=$label"_"
-    else
-      label=("${label/$2/_$2}")
-    fi
+  #hotkey management
+  if [ -z "$2" ]; then
+    label=$label"_"
+  else
+    label=("${label/$2/_$2}")
+  fi
   echo '<item label="'$label'"><action name="Execute"><command>' ;}
 function iend () { echo '</command></action></item>' ;}
 function scall () {
