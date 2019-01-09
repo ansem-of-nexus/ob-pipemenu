@@ -54,7 +54,7 @@ while getopts ":hp:i:r" opt; do
 done #while getopts "??" opt; do
 # setting script information
 #~ script="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
-#~ script_name="$(basename "${BASH_SOURCE[0]}")"
+script_name="$(basename "${BASH_SOURCE[0]}")"
 # checking path, to force path use
 #~ if [ -z $path ]; then echo "path must be set with '-p /path/to/stuff'" && exit 1; fi
 # checking for id_number
@@ -79,7 +79,7 @@ function mcall () {
   else
     label=("${label/$2/_$2}")
   fi
-  echo '<menu id="Rom_menu_id_'$id_number'" label="'$label'">' ;}
+  echo '<menu id="'$script_name'_menu_id_'$id_number'" label="'$label'">' ;}
 function mend () { echo '</menu>' ;}
 function icall () {
   local label="$1"
