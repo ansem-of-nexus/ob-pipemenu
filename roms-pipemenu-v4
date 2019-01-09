@@ -33,10 +33,11 @@ function help_screen () {
   }
 # voiding variables
 path=""
-id_number=""
+id_number="0"
 recursion=""
+folder=""
 # parsing out arguments
-while getopts ":hp:f:i:" opt; do
+while getopts ":hp:f:i:r" opt; do
   case $opt in
     h)
       help_screen
@@ -44,19 +45,15 @@ while getopts ":hp:f:i:" opt; do
     ;;
     p)
       declare -r path="${OPTARG}"
-      exit 0
     ;;
     f)
       declare -r folder="${OPTARG}"
-      exit 0
     ;;
     i)
-      id_number="${OPTARG}"
-      exit 0
+      id_header="${OPTARG}"
     ;;
     r)
       recursion=1
-      exit 0
     ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
@@ -71,12 +68,11 @@ while getopts ":hp:f:i:" opt; do
   esac
 done #while getopts "??" opt; do
 # path must be set
-if [ -z $path ]; then echo "path must be set with '-p /path'" && exit 1; fi
+if [ -z $path ]; then echo "path must be set with '-p /path/to/stuff'" && exit 1; fi
+if [ -z $id_header ]; then id_header=0; fi
 # setting script information
 script="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
 script_name="$(basename "${BASH_SOURCE[0]}")"
-# checking for id_number
-if [ -z $id_number ]; then id_number=0; fi
 # making for loop ignore spaces
 IFS=$(echo -en "\n\b")
 # functions
@@ -97,7 +93,7 @@ function mcall () {
     else
       label=("${label/$2/_$2}")
     fi
-  echo '<menu id="Rom_menu_id_'$id_number'" label="'$label'">' ;}
+  echo '<menu id="'$script_name'_menu_id_'$id_header'-'$id_number'" label="'$label'">' ;}
 function mend () { echo '</menu>' ;}
 function icall () {
   local label="$1"
@@ -114,7 +110,7 @@ function icall () {
     else
       label=("${label/$2/_$2}")
     fi
-  echo '<item label="'$label'"><action name="Execute"><command>' ;}
+  echo '<item label="'$label'"><action name="Execute"><command>'}
 function iend () { echo '</command></action></item>' ;}
 function seperator () {
   if [ -z $1 ]; then
@@ -131,7 +127,6 @@ function seperator () {
   echo '<separator label="'$label'"/>'
   fi ;}
 function pcall () {
-  menu_id
   local label="$1"
   # sanatizing label
   label=("${label//</&lt;}")
@@ -146,123 +141,113 @@ function pcall () {
     else
       label=("${label/$2/_$2}")
     fi
-  if [ -z $path ]; then
-    echo '<menu execute="'$script '-p' $path '-i' $id_number'" id="'$script_name'_menu_id_'$id_number'" label="'$label'"/>'
+  local command=""
+  menu_id
+  if [ ! -z $path ]; then command+="-p $path "; fi
+  if [ -z $folder ]; then
+    command+="-f '$1'"
   else
-    echo '<menu execute="'$script '-i' $id_number'" id="'$script_name'_menu_id_'$id_number'" label="'$label'"/>'
-  fi  ;}
+    command+="-f '$folder/$1'"
+  fi
+  echo '<menu execute="'$script $command '-i '$id_header'-'$id_number' -r" id="'$script_name'_menu_id_'$id_header'-'$id_number'" label="'$label'"/>' ;}
 function file_logic () {
-  case "$1" in
+  case "$2" in
   *.nes)
-    icall $1; echo $nes \"$path$2$1\"; iend
+    icall $2; echo $nes \"$1/$2\"; iend
     ;;
   *.snes)
-    icall $1; echo $snes \"$path$2$1\"; iend
+    icall $2; echo $snes \"$1/$2\"; iend
     ;;
   *.smc)
-    icall $1; echo $snes \"$path$2$1\"; iend
+    icall $2; echo $snes \"$1/$2\"; iend
     ;;
   *.gb)
-    icall $1; echo $gb \"$path$2$1\"; iend
+    icall $2; echo $gb \"$1/$2\"; iend
     ;;
   *.gbc)
-    icall $1; echo $gbc \"$path$2$1\"; iend
+    icall $2; echo $gbc \"$1/$2\"; iend
     ;;
   *.gba)
-    icall $1; echo $gba \"$path$2$1\"; iend
+    icall $2; echo $gba \"$1/$2\"; iend
     ;;
   *.nds)
-    icall $1; echo $nds \"$path$2$1\"; iend
+    icall $2; echo $nds \"$1/$2\"; iend
     ;;
   *.v64)
-    icall $1; echo $n64 \"$path$2$1\"; iend
+    icall $2; echo $n64 \"$1/$2\"; iend
     ;;
-  *.iso)
-    disk_logic "$1"
+  *.iso|*.cue)
+    disk_logic "$1" "$2"
     ;;
-  *.cue)
-    disk_logic "$1"
-  done
-}
+  *)
+    echo "<!-- $2 does not get an entry -->"
+  esac ;}
 function disk_logic () {
-  mcall "$1"
+  mcall "$2"
     icall "Playstation 1"
-      echo $ps1 \"$path$2$1\"
+      echo $ps1 \"$1/$2\"
     iend
     icall "Gamecube"
-      echo $cube \"$path$2$1\"
+      echo $cube \"$1/$2\"
     iend
     icall "Wii"
-        echo $wii \"$path$2$1\"
+        echo $wii \"$1/$2\"
     iend
-  mend
-  }
+  mend ;}
+function folder_logic () {
+  # clearing variable
+  item_name=""
+  list=""
+  declare -r local list=$(ls -Q1FL --group-directories-first $1)
+  for item in $list; do
+  case $item in
+    *\/)
+      local item_name=$item
+      item_name=${item_name:1: -2}
+      pcall "$item_name"
+      ;;
+    *\")
+      local item_name=$item
+      item_name=${item_name:1: -1}
+      if [ -z $folder ]; then
+        file_logic $path "$item_name"
+      else
+        file_logic $path/$folder "$item_name"
+      fi
+      ;;
+  esac; done ;}
 if [ -z $recursion ]; then
-  # Pipemenu Entry
-  menu_id #ticking menu_id for pcall
-  # pulling sub folder list
-  declare -r list_group=$(ls -Q1F $path/$folder | grep -F '/' | awk -F'"' '{print $2}' | awk -F'"' '{print $1}')
-  for item_folder in $list_group; do
-    pcall $item_folder $id_number
-  done #for folder in $list_group; do
-  #pulling roms list from main folders
-  declare -r list_single=$(ls -Q1F $path/$folder | grep -Fv '/' | awk -F'"' '{print $2}' | awk -F'"' '{print $1}')
-  for item_file in $list_single; do
-    file_logic $item_file
-  #done for pulling roms list
-  done
-else
   # start of menu
   echo "<openbox_pipe_menu>"
     # link to path
-    #~ icall "Roms Folder"
-      #~ echo $fm $rom
-    #~ iend
+    icall "Roms Folder"
+      echo $fm $path
+    iend
+    seperator
     # emulator list
-    #~ mcall "Emulator List"
-      #~ separator "Emulator followed by Command"
-      #~ icall "Nintendo handled by '$nes'" ; iend
-      #~ icall "Super Nintendo handle by '$snes'" ; iend
-      #~ icall "Gameboy handled by '$gb'" ; iend
-      #~ icall "Gameboy Color handled by '$gbc'" ; iend
-      #~ icall "Gameboy Advance handled by '$gba'" ; iend
-      #~ icall "Playstation 1 handled by '$ps1'" ; iend
-      #~ icall "Nitendo DS handled by '$nds'" ; iend
-      #~ icall "Nitendo 64 handled by '$n64'" ; iend
-      #~ icall "Gamecube handled by '$cube'" ; iend
-      #~ icall "Wii handled by '$wii'" ; iend
-    #~ mend
-    if [ -z "$path" ]; then
-      # path to pipemenu was not given
-      separator "Grouped Roms"
-      # pulling sub folder list
-      declare -r local list_group=$(ls -Q1F $path | grep -F '/' | awk -F'"' '{print $2}' | awk -F'"' '{print $1}')
-      for folder in $list_group; do
-        mcall $folder
-          list_logic $folder
-        mend
-      done #for folder in $list_group; do
-      separator "Single Roms"
-      # pulling roms list from main folders
-      declare -r local list_single=$(ls -Q1F $path | grep -Fv '/' | awk -F'"' '{print $2}' | awk -F'"' '{print $1}')
-      for file in $list_single; do
-        file_logic $file
-      done #for file in $list_single; do
-    else #if [ -z "$path" ]; then
-      for folder in $list_group; do
-        pcall $roms $folder
-      done #for folder in $list_group; do
-    fi #if [[ -z "$path" ]]; then
-    separator "Single Roms"
-    #pulling roms list from main folders
-    declare -r local list_single=$(ls -Q1F $rom | grep -Fv '/' | awk -F'"' '{print $2}' | awk -F'"' '{print $1}')
-    for file in $list_single; do
-      file_logic $file
-    #done for pulling roms list
-    done
+    mcall "Emulator List"
+      seperator "Emulator followed by Command"
+      icall "Nintendo handled by '$nes'" ; echo ""; iend
+      icall "Super Nintendo handle by '$snes'" ; echo ""; iend
+      icall "Gameboy handled by '$gb'" ; echo ""; iend
+      icall "Gameboy Color handled by '$gbc'" ; echo ""; iend
+      icall "Gameboy Advance handled by '$gba'" ; echo ""; iend
+      icall "Playstation 1 handled by '$ps1'" ; echo ""; iend
+      icall "Nitendo DS handled by '$nds'" ; echo ""; iend
+      icall "Nitendo 64 handled by '$n64'" ; echo ""; iend
+      icall "Gamecube handled by '$cube'" ; echo ""; iend
+      icall "Wii handled by '$wii'" ; echo ""; iend
+    mend
+    seperator
+    folder_logic $path
   #end of pipemenu
   echo "</openbox_pipe_menu>"
   exit 0
-fi #if [ $# -gt 2 ]; then
+else
+  # Pipemenu Entry
+  echo "<openbox_pipe_menu>"
+    menu_id #ticking menu_id for pcall
+    folder_logic $path/$folder
+  echo "</openbox_pipe_menu>"
+fi #if [ -z $recursion ]; then
 exit 0
-##########
