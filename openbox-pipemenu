@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # add to menus like openbox with a like this:
-# <menu execute="/path/to/script -p /path/to/stuff" id="menu id" label="menu name"/>
+# <menu execute="-p /path/to/stuff" id="menu id" label="menu name"/>
 #
 # setting software
 declare -r fm='thunar'
@@ -22,7 +22,7 @@ function help_screen () {
 path=""
 id_number=""
 # parsing out arguments
-while getopts ":hp:i:" opt; do
+while getopts ":hp:i:r" opt; do
   case $opt in
     h)
       help_screen
@@ -34,6 +34,10 @@ while getopts ":hp:i:" opt; do
     ;;
     i)
       id_number="${OPTARG}"
+      exit 0
+    ;;
+    r)
+      recursion=1
       exit 0
     ;;
     \?)
@@ -48,13 +52,15 @@ while getopts ":hp:i:" opt; do
     ;;
   esac
 done #while getopts "??" opt; do
-# making for loop ignore spaces
-IFS=$(echo -en "\n\b")
 # setting script information
-script="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
-script_name="$(basename "${BASH_SOURCE[0]}")"
+#~ script="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+#~ script_name="$(basename "${BASH_SOURCE[0]}")"
+# checking path, to force path use
+#~ if [ -z $path ]; then echo "path must be set with '-p /path/to/stuff'" && exit 1; fi
 # checking for id_number
 if [ -z $id_number ]; then id_number=0; fi
+# making for loop ignore spaces
+IFS=$(echo -en "\n\b")
 # functions
 function menu_id () { ((id_number++)) ;}
 function mcall () {
@@ -116,16 +122,22 @@ function pcall () {
   label=("${label//\"/&quot;}")
   label=("${label//\'/&apos;}")
   label=("${label//_/__}")
-    if [ -z "$2" ]; then
-      label=$label"_"
-    else
-      label=("${label/$2/_$2}")
-    fi
+  #hotkey management
+  if [ -z "$2" ]; then
+    label=$label"_"
+  else
+    label=("${label/$2/_$2}")
+  fi
   if [ -z $path ]; then
     echo '<menu execute="'$script '-p' $path '-i' $id_number $2'" id="'$script_name'_menu_id_'$id_number'" label="'$label'"/>'
   else
     echo '<menu execute="'$script '-i' $id_number $2'" id="'$script_name'_menu_id_'$id_number'" label="'$label'"/>'
   fi  ;}
-echo "<openbox_pipe_menu>"
-echo "</openbox_pipe_menu>"
+if [ -z $recursion ]; then
+  # if -r is used
+  echo "pipemenu has been called again"
+else
+  # primary pipemenu
+  echo "<openbox_pipe_menu>"
+  echo "</openbox_pipe_menu>"
 exit 0
