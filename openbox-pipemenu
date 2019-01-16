@@ -24,7 +24,8 @@ function help_screen () {
   }
 # voiding variables
 path=""
-id_number=""
+id_number="0"
+recursion=""
 # parsing out arguments
 while getopts ":hp:i:r" opt; do
   case $opt in
@@ -58,7 +59,7 @@ done #while getopts "??" opt; do
 script_name="$(basename "${BASH_SOURCE[0]}")"
 # checking path, to force path use
 #~ if [ -z $path ]; then echo "path must be set with '-p /path/to/stuff'" && exit 1; fi
-# checking for id_number
+# checking for id_header
 if [ -z $id_header ]; then id_header=0; fi
 # making for loop ignore spaces
 IFS=$(echo -en "\n\b")
