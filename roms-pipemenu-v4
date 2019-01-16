@@ -17,8 +17,8 @@ gba='mednafen'
 ps1='mednafen'
 nds='desmume'
 n64='mugen64plus'
-cube='dolphin-emu /e'
-wii='dolphin-emu /e'
+cube='dolphin-emu -e'
+wii='dolphin-emu -e'
 # file manager
 fm='thunar'
 #
@@ -110,7 +110,7 @@ function icall () {
     else
       label=("${label/$2/_$2}")
     fi
-  echo '<item label="'$label'"><action name="Execute"><command>'}
+  echo '<item label="'$label'"><action name="Execute"><command>' ;}
 function iend () { echo '</command></action></item>' ;}
 function seperator () {
   if [ -z $1 ]; then
