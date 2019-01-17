@@ -1,0 +1,149 @@
+#!/bin/bash
+#
+# add to menus like openbox with a like this:
+# <menu execute="/path/to/script -p /path/to/music" id="menu id" label="menu name"/>
+#
+# setting software
+declare -r fm='thunar'
+declare -r te='terminator -T "MOCP" -x'
+#
+# Don't edit past this line unless you know what you are doing
+#
+# help screen
+function help_screen () {
+  echo "Usage: script [option]"
+  echo "  <menu execute=\"/path/to/script -p /path/to/music\" id=\"menu id\" label=\"menu name\"/>"
+  echo "-h (this screen)"
+  echo "-p /path/to/stuff"
+  echo "-i id_number (id number of the menu this is called inside of)"
+  echo "-r (telling scrit that is is being run inside of itself)"
+  echo ""
+  exit 0 ;}
+# voiding variables
+path=""
+id_number="0"
+recursion=""
+# parsing out arguments
+while getopts ":hp:i:r" opt; do
+  case $opt in
+    h)
+      help_screen
+      exit 0
+    ;;
+    p)
+      declare -r path="${OPTARG}"
+    ;;
+    i)
+      id_number="${OPTARG}"
+    ;;
+    r)
+      declare -r recursion=1
+    ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      help_screen
+      exit 1
+    ;;
+    :)
+      echo "Option -$OPTARG requires an argument." >&2
+      help_screen
+      exit 1
+    ;;
+  esac #case $opt in
+done #while getopts "??" opt; do
+# checking for id_number
+if [ -z $id_header ]; then id_header=0; fi
+# making for loop ignore spaces
+IFS=$(echo -en "\n\b")
+# variables
+#  show song name
+title="$(mocp -Q 'MOC [%state]') $(mocp -Q %file | awk -F'/' '{print $NF}')"
+#~ title="$(mocp -Q 'MOC [%state] %song')"
+song_name=$(mocp -Q %song)
+artist=$(mocp -Q %artist)
+album=$(mocp -Q %album)
+song_length=$(mocp -Q %tt)
+status=$(pidof mocp)
+# functions
+function sanatize () {
+  local input="$1"
+  # sanatizing input
+  input=("${input//</&lt;}")
+  input=("${input//&/&amp;}")
+  input=("${input//>/&gt;}")
+  input=("${input//\"/&quot;}")
+  input=("${input//\'/&apos;}")
+  input=("${input//_/__}")
+  echo $input ;}
+function menu_id () { ((id_number++)) ;}
+function mcall () {
+  menu_id
+  local label="$(sanatize $1)"
+  if [ -z "$2" ]; then label=$label"_"; else label=("${label/$2/_$2}"); fi
+  echo '<menu id="'$script_name'_menu_id_'$id_header'-'$id_number'" label="'$label'">' ;}
+function mend () { echo '</menu>' ;}
+function icall () {
+  local label="$(sanatize $1)"
+  if [ -z "$2" ]; then label=$label"_"; else label=("${label/$2/_$2}"); fi
+  echo '<item label="'$label'"><action name="Execute"><command>' ;}
+function iend () { echo '</command></action></item>' ;}
+function separator () {
+  if [ -z "$*" ]; then
+  echo '<separator/>'
+  else
+  local label="$(sanatize $1)"
+  echo '<separator label="'$label'"/>'; fi ;}
+# start of menu
+echo "<openbox_pipe_menu>"
+  if [[ -z $status ]]; then
+    #start music player, because it isn't running
+    icall "Start MOCP"; echo '$te "mocp"'; iend
+  else
+    separator "$title"
+    if [ ! $title = "MOC [STOP] " ]; then
+      #controls
+      icall "Play / Pause" "P"; echo "mocp -G"; iend
+      icall "Next" "N"; echo "mocp -f"; iend
+      icall "Back" "B"; echo "mocp -r"; iend
+      icall "Stop" "S"; echo "mocp -s"; iend
+      separator
+      mcall "Volume" "V"
+        for i in {0..90..10}; do
+          icall $i ${i:0:1}; echo "mocp -v "$i; iend
+        done #for i in {0..90..10}; do
+        icall "Max" "M"; echo "mocp -v 100"; iend
+      mend
+      separator
+      mcall "Song Info" "I"
+        separator "Song - Time - Artist - Album"
+        separator $song_name
+        separator $song_length
+        separator $artist
+        separator $album
+      mend
+      mcall "Options"
+        icall "Shuffle on"; echo "mocp -o s"; iend
+        icall "Shuffle off"; echo "mocp -u s"; iend
+        separator
+        icall "Repeat on"; echo "mocp -o r"; iend
+        icall "Repeat off"; echo "mocp -u r"; iend
+        separator
+        icall "AutoNext on"; echo "mocp -o n"; iend
+        icall "AutoNext off"; echo "mocp -u n"; iend
+      mend
+    fi
+    #open music player
+    icall "Open MOCP" "O"; echo $te" mocp"; iend
+    #link to path
+    icall "Music Folder"; echo $fm $path; iend
+    #kill mocp
+    separator
+    mcall "Kill MOC"; icall "yes"; echo "mocp -x"; iend; mend
+  fi
+#end of pipemenu
+echo "</openbox_pipe_menu>"
+exit 0
+##########
+# to do list
+#
+# reduce command calles
