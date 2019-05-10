@@ -176,7 +176,7 @@ function file_logic () {
   *.v64)
     icall $2; echo $n64 \"$1/$2\"; iend
     ;;
-  *.iso|*.cue|*.m3u)
+  *.iso|*.cue)
     disk_logic "$1" "$2"
     ;;
   *)
