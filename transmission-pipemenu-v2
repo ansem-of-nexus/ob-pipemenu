@@ -45,7 +45,7 @@ function icall () {
   label=("${label//_/__}")
   echo '<item label="'$label'"><action name="Execute"><command>' ;}
 function iend () { echo '</command></action></item>' ;}
-function seperator () {
+function separator () {
   if [ -z $1 ]; then
   echo '<separator/>'
   else
@@ -139,7 +139,7 @@ function tpull () {
   }
 function tsec () {
   # status
-  seperator "Status: $t_status"
+  separator "Status: $t_status"
   # controls
   if [ $t_status = "Paused" ] || [ $t_status = "Finished" ] || [ $t_status = "Stopped" ]; then
     icall "Start Torrent"
@@ -189,7 +189,7 @@ function tsec () {
       echo "transmission-remote $connection -t $1 -HL"
     fi
   iend
-  seperator
+  separator
   # connection info downloading
   icall "Have/Avalible: $t_perc / $t_avalible"; echo "echo ''"; iend
   icall "ETA: $t_eta"; echo "echo ''"; iend
@@ -215,9 +215,9 @@ else
   # start of menu
   echo "<openbox_pipe_menu>"
     if [ -z $connection ]; then
-      seperator "Connected to localhost"
+      separator "Connected to localhost"
     else
-      seperator "Connected to $connection"
+      separator "Connected to $connection"
     fi #if [ -z $connection ]; then
     icall "Global Down Limit: $s_gdlimit_status"; echo "echo ''"; iend
     icall "Global Up Limit: $s_gulimit_status"; echo "echo ''"; iend
@@ -233,7 +233,7 @@ else
           echo "transmission-remote $connection -AS"
         iend
       fi #if [[ $s_tstauts = "Disable" ]]; then
-      seperator "Current Down Limit: $s_gdlimit_current"
+      separator "Current Down Limit: $s_gdlimit_current"
       mcall "Global Down Limit: $s_gdlimit_normal"
         icall "Disable"
           echo "transmission-remote $connection -D"
@@ -253,7 +253,7 @@ else
         done
         unset i #sanatizing i
       mend
-      seperator "Current Up Limit: $s_gulimit_current"
+      separator "Current Up Limit: $s_gulimit_current"
       mcall "Global Up Limit: $s_gulimit_normal"
         icall "Disable"
           echo "transmission-remote $connection -D"
@@ -273,12 +273,12 @@ else
         done
         unset i #sanatizing i
       mend
-      seperator
+      separator
       icall "Transmission Shutdown"
         echo "transmission-remote $connection --exit"
       iend
     mend
-    seperator "Torrents"
+    separator "Torrents"
     # pulling torrent list
     i=0
     while read l; do
