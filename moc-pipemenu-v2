@@ -59,14 +59,10 @@ if [ -z $id_header ]; then id_header=0; fi
 IFS=$(echo -en "\n\b")
 # variables
 moc_info="$(mocp -i)"
-# set title
-title="MOC ["
-title_state="${moc_info#* }" #%state
-title+="${title_state%%[[:cntrl:]]*}" #%state
-title+="] "
-title_file="${moc_info#File: }" #%file
-title_file="${title_file##*/}" #%file
-title+="${title_file%%[[:cntrl:]]*}" #%file
+# set file_name
+file_name="${moc_info#File: }" #%file
+file_name="${file_name##*/}" #%file
+file_name="${file_name%%[[:cntrl:]]*}" #%file
 # set song_name
 song_name="${moc_info#*SongTitle: }"
 song_name="${song_name%%[[:cntrl:]]*}"
@@ -80,6 +76,12 @@ album="${album%%[[:cntrl:]]*}"
 song_length="${moc_info#*TotalTime: }"
 song_length="${song_length%%[[:cntrl:]]*}"
 status=$(pidof mocp)
+# set title
+title="["
+title_state="${moc_info#* }" #%state
+title+="${title_state%%[[:cntrl:]]*}" #%state
+title+="] "
+title+=$file_name
 # functions
 function sanatize () {
   local input="$1"
@@ -113,7 +115,7 @@ function separator () {
 echo "<openbox_pipe_menu>"
   if [[ -z $status ]]; then
     #start music player, because it isn't running
-    icall "Start MOCP"; echo '$te "mocp"'; iend
+    icall "Start MOCP"; echo "$te mocp"; iend
   else
     separator "$title"
     if [ ! $title = "MOC [STOP] " ]; then
@@ -131,7 +133,8 @@ echo "<openbox_pipe_menu>"
       mend
       separator
       mcall "Song Info" "I"
-        separator "Song - Time - Artist - Album"
+        separator "File - Song - Time - Artist - Album"
+        separator $file_name
         separator $song_name
         separator $song_length
         separator $artist
