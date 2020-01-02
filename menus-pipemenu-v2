@@ -37,7 +37,7 @@ function mcall () {
   label=("${label//>/&gt;}")
   label=("${label//\"/&quot;}")
   label=("${label//\'/&apos;}")
-  label=("${label//_'/__}")
+  label=("${label//_/__}")
   echo '<menu id="Rom_menu_id_'$id_number'" label="'$label'">' ;}
 function mend () { echo '</menu>' ;}
 function icall () {
@@ -48,23 +48,37 @@ function icall () {
   label=("${label//>/&gt;}")
   label=("${label//\"/&quot;}")
   label=("${label//\'/&apos;}")
-  label=("${label//_'/__}")
+  label=("${label//_/__}")
   echo '<item label="'$label'"><action name="Execute"><command>' ;}
 function iend () { echo '</command></action></item>' ;}
+function separator () {
+  if [ -z $1 ]; then
+  echo '<separator/>'
+  else
+  local label="$1"
+  # sanatizing name
+  label=("${label//</&lt;}")
+  label=("${label//&/&amp;}")
+  label=("${label//>/&gt;}")
+  label=("${label//\"/&quot;}")
+  label=("${label//\'/&apos;}")
+  label=("${label//_/__}")
+  echo '<separator label="'$label'"/>'
+  fi ;}
 # start of pipemenu
 echo "<openbox_pipe_menu>"
   #link to path
   icall "Menu Folder"
     echo $fm $path
   iend
-  echo '<separator label="Files"/>'
+  separator "Files"
   list="$(ls -Q1F $1 | grep -Fv '/' | awk -F'"' '{print $2}' | awk -F'"' '{print $1}')"
   for f1 in $list; do
   # menu start
   mcall $f1
     # file permissions
     perm_label=$(ls -l $path$f1|awk -F'.' '{print $1}')
-    echo "<separator label=\"$perm_label\"/>"
+    separator $perm_label
     # edit file
     icall "Edit"
       echo $ed \"$path$f1\"
