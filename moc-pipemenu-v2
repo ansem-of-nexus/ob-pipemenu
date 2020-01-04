@@ -53,35 +53,41 @@ while getopts ":hp:i:r" opt; do
     ;;
   esac #case $opt in
 done #while getopts "??" opt; do
+# setting script information
+script="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+script_name="$(basename "${BASH_SOURCE[0]}")"
 # checking for id_number
 if [ -z $id_header ]; then id_header=0; fi
 # making for loop ignore spaces
 IFS=$(echo -en "\n\b")
-# variables
-moc_info="$(mocp -i)"
-# set file_name
-file_name="${moc_info#File: }" #%file
-file_name="${file_name##*/}" #%file
-file_name="${file_name%%[[:cntrl:]]*}" #%file
-# set song_name
-song_name="${moc_info#*SongTitle: }"
-song_name="${song_name%%[[:cntrl:]]*}"
-# set artist
-artist="${moc_info#*Artist: }"
-artist="${artist%%[[:cntrl:]]*}"
-# set album
-album="${moc_info#*Album: }"
-album="${album%%[[:cntrl:]]*}"
-# set song_length
-song_length="${moc_info#*TotalTime: }"
-song_length="${song_length%%[[:cntrl:]]*}"
+# checking if moc is running
 status=$(pidof mocp)
-# set title
-title="["
-title_state="${moc_info#* }" #%state
-title+="${title_state%%[[:cntrl:]]*}" #%state
-title+="] "
-title+=$file_name
+if [ ! $status = null ]; then
+  # variables
+  moc_info="$(mocp -i)"
+  # set file_name
+  file_name="${moc_info#File: }" #%file
+  file_name="${file_name##*/}" #%file
+  file_name="${file_name%%[[:cntrl:]]*}" #%file
+  # set song_name
+  song_name="${moc_info#*SongTitle: }"
+  song_name="${song_name%%[[:cntrl:]]*}"
+  # set artist
+  artist="${moc_info#*Artist: }"
+  artist="${artist%%[[:cntrl:]]*}"
+  # set album
+  album="${moc_info#*Album: }"
+  album="${album%%[[:cntrl:]]*}"
+  # set song_length
+  song_length="${moc_info#*TotalTime: }"
+  song_length="${song_length%%[[:cntrl:]]*}"
+  # set title
+  title="["
+  title_state="${moc_info#* }" #%state
+  title+="${title_state%%[[:cntrl:]]*}" #%state
+  title+="] "
+  title+=$file_name
+fi #if [ -z $status ]; then
 # functions
 function sanatize () {
   local input="$1"
