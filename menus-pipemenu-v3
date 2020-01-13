@@ -1,0 +1,109 @@
+#!/bin/bash
+#
+# add to menus like openbox with a like this:
+# <menu execute="script-name /path/to/menus/ /path/to/files/" id="script-name" label="menu name"/>
+#
+# file manager
+declare -r fm='thunar'
+# editor
+declare -r ed='geany'
+#
+# Do not edit lines passed this point unless you know what you are doing
+#
+# making for loop ignore spaces
+IFS=$(echo -en "\n\b")
+# vars
+case "$1" in
+    */)
+  declare -r menus=$1
+  ;;
+    *)
+  declare -r menus=$1/
+  ;;
+esac
+case "$2" in
+    */)
+  declare -r configs=$2
+  ;;
+    *)
+  declare -r configs=$2/
+  ;;
+esac
+if [ ! -z id_header ]; then id_header=0; fi
+# functions
+function sanatize () {
+  local input="$1"
+  # sanatizing input
+  input=("${input//</&lt;}")
+  input=("${input//&/&amp;}")
+  input=("${input//>/&gt;}")
+  input=("${input//\"/&quot;}")
+  input=("${input//\'/&apos;}")
+  input=("${input//_/__}")
+  echo $input ;}
+function menu_id () { if [ ! -z id_number ]; then id_number=0; fi; ((id_number++)) ;}
+function mcall () {
+  menu_id
+  local label="$(sanatize $1)"
+  if [ -z "$2" ]; then label=$label"_"; else label=("${label/$2/_$2}"); fi
+  echo '<menu id="'$script_name'_menu_id_'$id_header'-'$id_number'" label="'$label'">' ;}
+function mend () { echo '</menu>' ;}
+function icall () {
+  local label="$(sanatize $1)"
+  if [ -z "$2" ]; then label=$label"_"; else label=("${label/$2/_$2}"); fi
+  echo '<item label="'$label'"><action name="Execute"><command>' ;}
+function iend () { echo '</command></action></item>' ;}
+function separator () {
+  if [ -z "$*" ]; then
+  echo '<separator/>'
+  else
+  local label="$(sanatize $1)"
+  echo '<separator label="'$label'"/>'; fi ;}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# start of pipemenu
+echo "<openbox_pipe_menu>"
+  #link to path
+  icall "Menu Folder"
+    echo $fm $path
+  iend
+  separator "Files"
+  list="$(ls -Q1F $1 | grep -Fv '/' | awk -F'"' '{print $2}' | awk -F'"' '{print $1}')"
+  for f1 in $list; do
+  # menu start
+  mcall $f1
+    # file permissions
+    perm_label=$(ls -l $path$f1|awk -F'.' '{print $1}')
+    separator $perm_label
+    # edit file
+    icall "Edit"
+      echo $ed \"$path$f1\"
+    iend
+    # chmod +x
+    icall "chmod +x"
+      echo chmod +x \"$path$f1\"
+    iend
+    # chmod -x
+    icall "chmod -x"
+      echo chmod -x \"$path$f1\"
+    iend
+  # menu end
+  mend
+  # for end
+  done
+# end of pipemenu
+echo "</openbox_pipe_menu>"
+exit
+# rewrite to set link path to files in folder
