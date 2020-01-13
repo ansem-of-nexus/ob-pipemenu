@@ -55,7 +55,7 @@ function icall () {
   label=("${label//_/__}")
   echo '<item label="'$label'"><action name="Execute"><command>' ;}
 function iend () { echo '</command></action></item>' ;}
-function seperator () {
+function separator () {
   if [ -z $1 ]; then
   echo '<separator/>'
   else

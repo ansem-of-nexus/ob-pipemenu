@@ -112,7 +112,7 @@ function icall () {
     fi
   echo '<item label="'$label'"><action name="Execute"><command>' ;}
 function iend () { echo '</command></action></item>' ;}
-function seperator () {
+function separator () {
   if [ -z $1 ]; then
   echo '<separator/>'
   else
@@ -223,10 +223,10 @@ if [ -z $recursion ]; then
     icall "Roms Folder"
       echo $fm $path
     iend
-    seperator
+    separator
     # emulator list
     mcall "Emulator List"
-      seperator "Emulator followed by Command"
+      separator "Emulator followed by Command"
       icall "Nintendo handled by '$nes'" ; echo ""; iend
       icall "Super Nintendo handle by '$snes'" ; echo ""; iend
       icall "Gameboy handled by '$gb'" ; echo ""; iend
@@ -238,7 +238,7 @@ if [ -z $recursion ]; then
       icall "Gamecube handled by '$cube'" ; echo ""; iend
       icall "Wii handled by '$wii'" ; echo ""; iend
     mend
-    seperator
+    separator
     folder_logic $path
   #end of pipemenu
   echo "</openbox_pipe_menu>"
