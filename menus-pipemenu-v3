@@ -60,7 +60,10 @@ function separator () {
   local label="$(sanatize $1)"
   echo '<separator label="'$label'"/>'; fi ;}
 
-
+  function permissions () {
+    local current=$(ls -l $1)
+    current=${current%%\ *}
+  };
 
 
 
