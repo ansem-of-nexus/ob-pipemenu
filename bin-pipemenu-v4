@@ -1,0 +1,94 @@
+#!/bin/bash
+#
+# add to menus like openbox with a like this:
+# <menu execute="/path/to/script" id="menu id" label="menu name"/>
+#
+# setting software
+declare -r fm='thunar'
+declare -r ed='geany'
+declare -r te='terminator -x'
+## making for loop ignore spaces
+IFS=$(echo -en "\n\b")
+# setting script information
+script="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+script_name="$(basename "${BASH_SOURCE[0]}")"
+# checking for id_number
+if [ -z $id_number ]; then id_number=0; fi
+# functions
+function sanatize () {
+  local input="$1"
+  # sanatizing input
+  input=("${input//</&lt;}")
+  input=("${input//&/&amp;}")
+  input=("${input//>/&gt;}")
+  input=("${input//\"/&quot;}")
+  input=("${input//\'/&apos;}")
+  input=("${input//_/__}")
+  echo $input ;}
+function menu_id () { if [ -z id_number ]; then id_number=0; fi; ((id_number++)) ;}
+function mcall () {
+  menu_id
+  local label="$(sanatize $1)"
+  if [ -z "$2" ]; then label=$label"_"; else label=("${label/$2/_$2}"); fi
+  echo '<menu id="'$script_name'_menu_id_'$id_header'-'$id_number'" label="'$label'">' ;}
+function mend () { echo '</menu>' ;}
+function icall () {
+  local label="$(sanatize $1)"
+  if [ -z "$2" ]; then label=$label"_"; else label=("${label/$2/_$2}"); fi
+  echo '<item label="'$label'"><action name="Execute"><command>' ;}
+function iend () { echo '</command></action></item>' ;}
+function separator () {
+  if [ -z "$*" ]; then
+  echo '<separator/>'
+  else
+  local label="$(sanatize $1)"
+  echo '<separator label="'$label'"/>'; fi ;}
+# start of pipemenu
+echo "<openbox_pipe_menu>"
+  icall "Bin Folder"
+    echo $fm "/home/$USER/bin"
+  iend
+  separator "Files"
+  while read l; do
+    file_perms="${l%%\ *}"
+    file_name="${l#*\"}"
+    file_name="${file_name%%\"*}"
+    mcall $file_name
+      if [[ $file_perms == l* ]]; then
+        file_link="${l%\"*}"
+        file_link="${file_link##*\"}"
+        file_link_dir="${file_link%\/*}"
+        file_link_ls="$(ls -lQ $file_link)"
+        file_link_perms="${file_link_ls%%\ *}"
+        file_link_name="${file_link_ls%\"*}"
+        file_link_name="${file_link_name##*/}"
+        mcall $file_perms
+          separator $file_link_name
+          separator $file_link_perms
+          icall "Open Folder"; echo "$fm $file_link_dir"; iend
+          icall "edit"; echo "$ed $file_link_dir/$file_link_name"; iend
+          if [[ $file_link_perms == *x* ]]; then
+            icall "chmod -x"; echo "chmod -x $file_link_dir/$file_link_name"; iend
+            mcall "Run"
+              icall "Run file"; echo "$file_link_dir/$file_link_name"; iend
+              icall "Run in terminal"; echo "$te $file_link_dir/$file_link_name"; iend
+              icall "Run as root"; echo "$te sudo $file_link_dir/$file_link_name"; iend
+            mend
+          else icall "chmod +x"; echo "chmod +x $file_link_dir/$file_link_name"; iend; fi
+        mend
+        separator
+      else separator $file_perms; fi
+      icall "edit"; echo "$ed $1$file_name"; iend
+      if [[ $file_perms == *x* ]]; then
+        icall "chmod -x"; echo "chmod -x /home/$USER/bin/$file_name"; iend
+        mcall "Run"
+          icall "Run file"; echo "$file_link_dir/$file_link_name"; iend
+          icall "Run in terminal"; echo "$te $file_link_dir/$file_link_name"; iend
+          icall "Run as root"; echo "$te sudo $file_link_dir/$file_link_name"; iend
+        mend
+      else icall "chmod +x"; echo "chmod +x /home/$USER/bin/$file_name"; iend; fi
+    mend
+  done <<< "$(ls -lQ /home/$USER/bin|grep -v '^total'|grep -v ^d)"
+# end of pipe menu
+echo "</openbox_pipe_menu>"
+exit 0
