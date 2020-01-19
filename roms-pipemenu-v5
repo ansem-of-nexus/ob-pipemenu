@@ -1,0 +1,306 @@
+#!/bin/bash
+#
+# add to menus like openbox with a like this:
+# <menu execute="script-name /path/to/files/" id="script-name" label="menu name"/>
+#
+# software list for emulators
+nes='mednafen'
+snes='mednafen'
+gb='mednafen'
+gbc='mednafen'
+gba='mednafen'
+ps1='mednafen'
+nds='desmume'
+n64='mugen64plus'
+cube='dolphin-emu -e'
+wii='dolphin-emu -e'
+# file manager
+declare -r fm='thunar'
+declare -r ed='geany'
+declare -r te='terminator -x'
+#
+# Do not edit lines passed this point unless you know what you are doing
+#
+function help_screen () {
+  echo "Usage: script [option] 'something'"
+  echo ""
+  echo "-option"
+  echo ""
+  exit 0
+  }
+# voiding variables
+path=""
+recursion=""
+folder=""
+# parsing out arguments
+while getopts ":hp:f:i:r" opt; do
+  case $opt in
+    h)
+      help_screen
+      exit 0
+    ;;
+    p)
+      declare -r path="${OPTARG}"
+    ;;
+    f)
+      declare -r folder="${OPTARG}"
+    ;;
+    i)
+      id_header="${OPTARG}"
+    ;;
+    r)
+      recursion=1
+    ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      help_screen
+      exit 1
+    ;;
+    :)
+      echo "Option -$OPTARG requires an argument." >&2
+      help_screen
+      exit 1
+    ;;
+  esac
+done #while getopts "??" opt; do
+# making for loop ignore spaces
+IFS=$(echo -en "\n\b")
+# setting variables and checking for them
+script="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+script_name="$(basename "${BASH_SOURCE[0]}")"
+if [ -z $path ]; then echo "path must be set with '-p /path/to/stuff'" && exit 1; fi
+if [ -z $id_header ]; then id_header=0; fi
+if [ -z $id_number ]; then id_number=0; fi
+# functions
+function sanatize () {
+  local input="$1"
+  # sanatizing input
+  input=("${input//</&lt;}")
+  input=("${input//&/&amp;}")
+  input=("${input//>/&gt;}")
+  input=("${input//\"/&quot;}")
+  input=("${input//\'/&apos;}")
+  input=("${input//_/__}")
+  echo $input ;}
+function menu_id () { if [ -z id_number ]; then id_number=0; fi; ((id_number++)) ;}
+function mcall () {
+  menu_id
+  local label="$(sanatize $1)"
+  if [ -z "$2" ]; then label=$label"_"; else label=("${label/$2/_$2}"); fi
+  echo '<menu id="'$script_name'_menu_id_'$id_header'-'$id_number'" label="'$label'">' ;}
+function mend () { echo '</menu>' ;}
+function icall () {
+  local label="$(sanatize $1)"
+  if [ -z "$2" ]; then label=$label"_"; else label=("${label/$2/_$2}"); fi
+  echo '<item label="'$label'"><action name="Execute"><command>' ;}
+function iend () { echo '</command></action></item>' ;}
+function separator () {
+  if [ -z "$*" ]; then
+  echo '<separator/>'
+  else
+  local label="$(sanatize $1)"
+  echo '<separator label="'$label'"/>'; fi ;}
+function pcall () {
+  local label="$(sanatize $1)"
+  #setting hotkey
+  if [ -z "$2" ]; then
+    label=$label"_"
+  else
+    label=("${label/$2/_$2}")
+  fi
+  local command=""
+  menu_id
+  if [ ! -z $path ]; then command+="-p $path "; fi
+  if [ -z $folder ]; then
+    command+="-f '$1'"
+  else
+    command+="-f '$folder/$1'"
+  fi
+  echo '<menu execute="'$script $command '-i '$id_header'-'$id_number' -r" id="'$script_name'_menu_id_'$id_header'-'$id_number'" label="'$label'"/>' ;}
+function file_logic () {
+  case "$2" in
+    *.nes)
+      icall $2; echo $nes \"$1/$2\"; iend
+      ;;
+    *.smc|*.snes)
+      icall $2; echo $snes \"$1/$2\"; iend
+      ;;
+    *.gb)
+      icall $2; echo $gb \"$1/$2\"; iend
+      ;;
+    *.gbc)
+      icall $2; echo $gbc \"$1/$2\"; iend
+      ;;
+    *.gba)
+      icall $2; echo $gba \"$1/$2\"; iend
+      ;;
+    *.nds)
+      icall $2; echo $nds \"$1/$2\"; iend
+      ;;
+    *.v64)
+      icall $2; echo $n64 \"$1/$2\"; iend
+      ;;
+    *.iso|*.cue)
+      mcall "$2"
+        icall "Playstation 1"; echo $ps1 \"$1/$2\"; iend
+        icall "Gamecube"; echo $cube \"$1/$2\"; iend
+        icall "Wii"; echo $wii \"$1/$2\"; iend
+      mend
+      ;;
+    *)
+      echo "<!-- $2 does not get an entry -->"
+  esac ;}
+function folder_logic () {
+  declare -r local list=$(ls -Q1FL --group-directories-first $1)
+  for item in $list; do
+  case $item in
+    *\/)
+      local item_name=$item
+      item_name=${item_name:1: -2}
+      pcall "$item_name"
+      ;;
+    *\")
+      local item_name=$item
+      item_name=${item_name:1: -1}
+      if [ -z $folder ]; then
+        file_logic $path "$item_name"
+      else
+        file_logic $path/$folder "$item_name"
+      fi
+      ;;
+  esac; done ;}
+if [ -z $recursion ]; then
+  # start of menu
+  echo "<openbox_pipe_menu>"
+    # link to path
+    icall "Roms Folder"
+      echo $fm $path
+    iend
+    separator
+    # emulator list
+    mcall "Emulator List"
+      separator "Emulator followed by Command"
+      icall "Nintendo handled by '$nes'" ; echo ""; iend
+      icall "Super Nintendo handle by '$snes'" ; echo ""; iend
+      icall "Gameboy handled by '$gb'" ; echo ""; iend
+      icall "Gameboy Color handled by '$gbc'" ; echo ""; iend
+      icall "Gameboy Advance handled by '$gba'" ; echo ""; iend
+      icall "Playstation 1 handled by '$ps1'" ; echo ""; iend
+      icall "Nitendo DS handled by '$nds'" ; echo ""; iend
+      icall "Nitendo 64 handled by '$n64'" ; echo ""; iend
+      icall "Gamecube handled by '$cube'" ; echo ""; iend
+      icall "Wii handled by '$wii'" ; echo ""; iend
+    mend
+    separator
+    folder_logic $path
+  #end of pipemenu
+  echo "</openbox_pipe_menu>"
+  exit 0
+else
+  # Pipemenu Entry
+  echo "<openbox_pipe_menu>"
+    menu_id #ticking menu_id for pcall
+    folder_logic $path/$folder
+  echo "</openbox_pipe_menu>"
+fi #if [ -z $recursion ]; then
+exit 0
+
+
+  while read l; do
+    file_perms="${l%%\ *}"
+    file_name="${l#*\"}"
+    file_name="${file_name%%\"*}"
+    mcall $file_name
+      if [[ $file_perms == l* ]]; then
+        file_link="${l%\"*}"
+        file_link="${file_link##*\"}"
+        file_link_dir="${file_link%\/*}"
+        file_link_ls="$(ls -lQ $file_link)"
+        file_link_perms="${file_link_ls%%\ *}"
+        file_link_name="${file_link_ls%\"*}"
+        file_link_name="${file_link_name##*/}"
+        mcall $file_perms
+          separator $file_link_name
+          separator $file_link_perms
+          icall "Open Folder"; echo "$fm $file_link_dir"; iend
+          icall "edit"; echo "$ed $file_link_dir/$file_link_name"; iend
+          if [[ $file_link_perms == *x* ]]; then
+            icall "chmod -x"; echo "chmod -x $file_link_dir/$file_link_name"; iend
+            mcall "Run"
+              icall "Run file"; echo "$file_link_dir/$file_link_name"; iend
+              icall "Run in terminal"; echo "$te $file_link_dir/$file_link_name"; iend
+              icall "Run as root"; echo "$te sudo $file_link_dir/$file_link_name"; iend
+            mend
+          else icall "chmod +x"; echo "chmod +x $file_link_dir/$file_link_name"; iend; fi
+        mend
+        separator
+      else separator $file_perms; fi
+      icall "edit"; echo "$ed $1$file_name"; iend
+      if [[ $file_perms == *x* ]]; then
+        icall "chmod -x"; echo "chmod -x /home/$USER/bin/$file_name"; iend
+        mcall "Run"
+          icall "Run file"; echo "$file_link_dir/$file_link_name"; iend
+          icall "Run in terminal"; echo "$te $file_link_dir/$file_link_name"; iend
+          icall "Run as root"; echo "$te sudo $file_link_dir/$file_link_name"; iend
+        mend
+      else icall "chmod +x"; echo "chmod +x /home/$USER/bin/$file_name"; iend; fi
+    mend
+  done <<< "$(ls -lQ /home/$USER/bin|grep -v '^total'|grep -v ^d)"
+function folder-to-playlist () { #updated
+  local flist="$(find $path -maxdepth 1 -not -type d|sort)"
+  if [ ! -f "$playlist_location" ]; then
+    touch "$playlist_location"
+    echo "#EXTM3U" > "$playlist_location"
+  fi
+  while read f; do
+    local file_duration="$(ffprobe -v quiet -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 $f)"
+    file_duration="${file_duration%%.*}"
+    local file_name="${f##*\/}"
+    # entry 1
+    echo "#EXTINF:$file_duration,$file_name" >> "$playlist_location"
+    # entry 2
+    echo "$f" >> "$playlist_location"
+  done <<< "$flist"
+  }
+function link_logic () {
+  link="$(ls -lQ $1|grep -v ^total)"
+}
+
+while read l; do
+  case $l in
+    -*) 
+      line="${l#*\"}"
+      line="${line%%\"*}"
+      file_logic $line
+    d*)
+      line="${l#*\"}"
+      line="${line%%\"*}"
+      folder_logic $line
+    l*)
+      line="${l%\"*}"
+      line="${l##*\"}"
+      link_logic $line
+  esac
+done <<< "$(ls -lQ $directory|grep -v ^total)"
+
+# path and link both need ls
+# path is going to be dir
+# link may not
+# pcall keeps commands down
+# logic or commands take more resources?
+#
+# playlist for mednafen
+# create playlist from folder
+# can't start playlist because disk-logic
+# terminal asks disk-logic?
+#
+# ls -lQ|grep -v ^total
+# show file size and permmissions?
+# have to add -h for human readable
+# show emulator?
+# show archives?
+# toggle for emulator select instead of auto start?
+# if toggle, generate help menu?
+#
+# start if dir?
+# only support links to dirs?
