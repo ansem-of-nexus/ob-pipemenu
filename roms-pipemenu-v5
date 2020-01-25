@@ -159,9 +159,7 @@ function disk_menu () {
     icall "Wii"; echo $wii \"$1\"; iend
     if [ -z $menus]; then icall "show terminal"; echo "$te $ps1 \"$1\""; iend; seperator ;fi
     if [ $@ < 3 ]; then icall "make playlist"; echo "$script -l "; iend ;fi
-  mend
-
-  ;}
+  mend ;}
 function file_logic () {
   case "$1" in
     *.nes)
@@ -186,17 +184,10 @@ function file_logic () {
       file_menu "$n64" "$1" "$2"
       ;;
     *.iso|*.cue)
-      mcall "$2"
-        icall "Playstation 1"; echo $ps1 \"$1\"; iend
-        if [ -z $menus]; then icall "show terminal"; echo "$te $ps1 \"$1\""; iend; seperator ;fi
-        icall "Gamecube"; echo $cube \"$1\"; iend
-        if [ -z $menus]; then icall "show terminal"; echo "$te $ps1 \"$1\""; iend; seperator ;fi
-        icall "Wii"; echo $wii \"$1\"; iend
-        if [ -z $menus]; then icall "show terminal"; echo "$te $ps1 \"$1\""; iend; seperator; else separator ;fi
-        icall "make playlist"; echo "$script -l "; iend
-      mend
+      disk_menu "$1" "$2" 1
       ;;
     *.m3u)
+      disk_menu "$1" "$2"
       ;;
     *)
       echo "<!-- $2 does not get an entry -->"
@@ -219,37 +210,32 @@ function pathway () {
   while read l; do
     case $l in
       \-*) 
-        entry="${l#*\"}"
-        entry="${entry%%\"*}"
-        file_logic $path $entry
+        file="${l#*\"}"
+        file="${file%%\"*}"
+        entry="${file%\.*}"
+        file_logic "$file" "$entry"
         ;;
       d*)
-        entry="${l#*\"}"
-        entry="${entry%%\"*}"
-        link="${l%\"*}"
-        link="${link##*\"}"
-        pcall "-p $link -i $id_header" "$entry"
+        dir="${l%\"*}"
+        dir="${dir##*\"}"
+        entry="${dir##*\/}"
+        pcall "-p $dir -i $id_header" "$entry"
         ;;
       l*)
         entry="${l#*\"}"
         entry="${entry%%\"*}"
         link="${l%\"*}"
         link="${link##*\"}"
-        if [ -z $menus]; then
-          size="${l#$USER*}"
-          size="${size#\ *}"
-          size="${size%%*\ }"
-          mcall  $entry
-            separator "$link"
-            separator "$size"
-            file_logic "$link"
-          mend
+        if [ -d "$link" ]; then
+          entry="${entry##\/*}"
+          pcall "-p $link -i $id_header" "$entry"
         else
-          icall $entry; echo""; iend
+          entry="${entry%*\.}"
+          file_logic "$link" "$entry"
         fi
         ;;
     esac
-  done <<< "$(ls -lQ $1|grep -v ^total)" ;}
+  done <<< "$(ls -ohQ $1|grep -v ^total)" ;}
 # pipemenu
 if [ -z $recursion ]; then
   # start of pipemenu
@@ -281,7 +267,6 @@ else
   echo "<openbox_pipe_menu>"
     menu_id #ticking menu_id for pcall
     pathway $path
-    separator
   echo "</openbox_pipe_menu>"
 fi #if [ -z $recursion ]; then
 exit 0
