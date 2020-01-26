@@ -34,7 +34,7 @@ function help_screen () {
 declare path
 declare recursion
 declare id_header
-declare menus
+declare menus; menus=""
 # parsing out arguments
 while getopts ":hp:i:rml:" opt; do
   case $opt in
@@ -115,8 +115,8 @@ function mend () { echo '</menu>' ;}
 function icall () {
   local label; label="$(sanatize "$1")"
   if [ -z "$2" ]; then label=$label"_"; else label=("${label/$2/_$2}"); fi
-  echo '<item label=""$label""><action name=""Execute""><command>' ;}
-function iend () { echo '</command></action></item>' ;}
+  echo "<item label=\""$label"\"><action name=\"Execute\"><command>" ;}
+function iend () { echo "</command></action></item>" ;}
 function separator () {
   if [ -z "$*" ]; then
   echo '<separator/>'
@@ -127,10 +127,11 @@ function pcall () {
   # order of inputs is command arguments, then label, and then hotkey
   local label; label="$(sanatize "$2")"
   #setting hotkey
-  if [ -z "$3" ]; then label="$label_"
+  if [ -z "$3" ]; then label+="_"
   else label="${label/$3/_$3}"; fi
   menu_id
-  echo "<menu execute=\""$script" $(sanatize $1) -i "$id_header" -r\" id=\""$script_name"_menu_id_"$id_header"-"$id_number"\" label=\""$label"\"/>" ;}
+  if [ -z $menus ]; then echo "<menu execute=\""$script" $(sanatize $1) -i "$id_header" -r\" id=\""$script_name"_menu_id_"$id_header"-"$id_number"\" label=\"$label\"/>"
+  else echo "<menu execute=\""$script" $(sanatize $1) -m -i "$id_header" -r\" id=\""$script_name"_menu_id_"$id_header"-"$id_number"\" label=\"$label\"/>"; fi ;}
 function emulator_list () {
   mcall "Emulator list"
     icall "Nintendo"; echo "$nes $1"; iend
@@ -144,8 +145,8 @@ function emulator_list () {
     icall "Gamecube"; echo "$cube $1"; iend
     icall "Wii"; echo "$wii $1"; iend
   mend;}
-function file_menus () {
-   if [ -z $menus ]; then
+function file_menu () {
+   if [ ! -z $menus ]; then
     mcall "$3"
       separator "$1"
       icall "run"; echo "$1 \"$2\""; iend
@@ -157,12 +158,12 @@ function file_menus () {
 function disk_menu () {
   mcall "$2"
     icall "Playstation 1"; echo "$ps1 $1"; iend
-    if [ -z $menus ]; then icall "show terminal"; echo "$te $ps1 \"$1\""; iend; seperator ;fi
+    if [ ! -z $menus ]; then icall "show terminal"; echo "$te $ps1 \"$1\""; iend; separator ;fi
     icall "Gamecube"; echo "$cube $1"; iend
-    if [ -z $menus ]; then icall "show terminal"; echo "$te $ps1 \"$1\""; iend; seperator ;fi
+    if [ ! -z $menus ]; then icall "show terminal"; echo "$te $ps1 \"$1\""; iend; separator ;fi
     icall "Wii"; echo "$wii $1"; iend
-    if [ -z $menus ]; then icall "show terminal"; echo "$te $ps1 \"$1\""; iend; seperator ;fi
-    if [ "$#" -lt 3 ]; then icall "make playlist"; echo "$script -l "; iend ;fi
+    if [ ! -z $menus ]; then icall "show terminal"; echo "$te $ps1 \"$1\""; iend; separator ;fi
+    if [ "$#" -gt 2 ]; then icall "make playlist"; echo "$script -l "; iend ;fi
   mend ;}
 function file_logic () {
   case "$1" in
@@ -173,10 +174,10 @@ function file_logic () {
       file_menu "$snes" "$1" "$2"
       ;;
     *.gb)
-      file_menus "$gb" "$1" "$2"
+      file_menu "$gb" "$1" "$2"
       ;;
     *.gbc)
-      file_menus "$gbc" "$1" "$2"
+      file_menu "$gbc" "$1" "$2"
       ;;
     *.gba)
       file_menu "$gba" "$1" "$2"
@@ -196,23 +197,10 @@ function file_logic () {
     *)
       echo "<!-- $2 does not get an entry -->"
   esac ;}
-#~ function tmp () {
-  #~ #ls -ohQ $path
-  #~ local declare label="${1%%*\ }"
-  #~ local declare size="${1##$USER*}"
-  #~ size="${size#\ *}"
-  #~ size="${size%%*\ }"
-  #~ mcall "$label"
-    #~ separator "$perms"
-    #~ separator "size $size"
-    #~ icall "emulator"; echo ""; iend
-    #~ icall "show terminal"; echo ""; iend
-    #~ pcall "-p $file" "other emulators"
-  #~ mend;}
 function pathway () {
   while read l; do
     case $l in
-      \-*) 
+      \-*)
         file="${l#*\"}"
         file="${file%%\"*}"
         entry="${file%\.*}"
@@ -222,6 +210,7 @@ function pathway () {
         dir="${l%\"*}"
         dir="${dir##*\"}"
         entry="${dir##*\/}"
+        echo "$dir | $entry"
         pcall "-p $path$dir" "$entry"
         ;;
       l*)
