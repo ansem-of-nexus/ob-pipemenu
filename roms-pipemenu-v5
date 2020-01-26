@@ -31,10 +31,12 @@ function help_screen () {
   exit 0
   }
 # voiding variables
-path=""
-recursion=""
+declare path
+declare recursion
+declare id_header
+declare menus
 # parsing out arguments
-while getopts ":hp:i:rl:" opt; do
+while getopts ":hp:i:rml:" opt; do
   case $opt in
     h)
       help_screen
@@ -60,16 +62,17 @@ while getopts ":hp:i:rl:" opt; do
       menus=1
       ;;
     l)
+      declare playlist
       playlist="${OPTARG%*\/}"
       playlist="${playlist##\/*}"
       playlist="${OPTARG}$playlist.m3u"
-      if [ ! -f $playlist ]; then touch $playlist; fi
+      if [ ! -f "$playlist" ]; then touch "$playlist"; fi
       echo "#EXTM3U" > "$playlist"
       while read l; do
         file="${l%*\"}"
         file="${file##\/*}"
-        echo $file >> $playlist
-      done <<< "$(ls -lQ \"${OPTARG}\"|grep -v ^total|grep -v m3u|grep ^-)"
+        echo "$file" >> "$playlist"
+      done <<< "$(ls -lQ \""${OPTARG}"\"|grep -v ^total|grep -v m3u|grep ^-)"
       exit 0
       ;;
     \?)
@@ -87,12 +90,13 @@ done #while getopts "??" opt; do
 # making loops ignore spaces
 IFS=$(echo -en "\n\b")
 # setting variables and checking for them
-script="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
-script_name="$(basename "${BASH_SOURCE[0]}")"
-if [ -z $path ]; then echo "path must be set with '-p /path/to/stuff'" && exit 1; fi
+declare script; script="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+declare script_name; script_name="$(basename "${BASH_SOURCE[0]}")"
+if [ -z "$path" ]; then echo "path must be set with '-p /path/to/stuff'" && exit 1; fi
+if [ -z "$id_header" ]; then id_header="m"; fi
 # functions
 function sanatize () {
-  local input="$1"
+  local input; input="$1"
   # sanatizing input
   input=("${input//</&lt;}")
   input=("${input//&/&amp;}")
@@ -100,45 +104,45 @@ function sanatize () {
   input=("${input//\"/&quot;}")
   input=("${input//\'/&apos;}")
   input=("${input//_/__}")
-  echo $input ;}
-function menu_id () { if [ -z id_number ]; then id_number=0; else ((id_number++)); fi ;}
+  echo "$input" ;}
+function menu_id () { if [ -z "$id_number" ]; then id_number=0; else ((id_number++)); fi ;}
 function mcall () {
   menu_id
-  local label="$(sanatize $1)"
+  local label; label="$(sanatize "$1")"
   if [ -z "$2" ]; then label=$label"_"; else label=("${label/$2/_$2}"); fi
-  echo '<menu id="'$script_name'_menu_id_'$id_header'-'$id_number'" label="'$label'">' ;}
+  echo "<menu id=\""$script_name"_menu_id_"$id_header"-"$id_number"\" label=\""$label"\">" ;}
 function mend () { echo '</menu>' ;}
 function icall () {
-  local label="$(sanatize $1)"
+  local label; label="$(sanatize "$1")"
   if [ -z "$2" ]; then label=$label"_"; else label=("${label/$2/_$2}"); fi
-  echo '<item label="'$label'"><action name="Execute"><command>' ;}
+  echo '<item label=""$label""><action name=""Execute""><command>' ;}
 function iend () { echo '</command></action></item>' ;}
 function separator () {
   if [ -z "$*" ]; then
   echo '<separator/>'
   else
-  local label="$(sanatize $1)"
-  echo '<separator label="'$label'"/>'; fi ;}
+  local label; label="$(sanatize "$1")"
+  echo "<separator label=\""$label"\"/>"; fi ;}
 function pcall () {
   # order of inputs is command arguments, then label, and then hotkey
-  local label="$(sanatize $2)"
+  local label; label="$(sanatize "$2")"
   #setting hotkey
-  if [ -z "$3" ]; then label=$label"_"
-  else label=("${label/$3/_$3}"); fi
+  if [ -z "$3" ]; then label="$label_"
+  else label="${label/$3/_$3}"; fi
   menu_id
-  echo "<menu execute=\"$script $(sanatize $1) -r\" id=\"$script_name_menu_id_$id_header-$id_number\" label=\"$label\"/>" ;}
+  echo "<menu execute=\""$script" $(sanatize $1) -i "$id_header" -r\" id=\""$script_name"_menu_id_"$id_header"-"$id_number"\" label=\""$label"\"/>" ;}
 function emulator_list () {
   mcall "Emulator list"
-    icall "Nontendo"; echo $nes \"$1\"; iend
-    icall "Super Nintendo"; echo $snes \"$1\"; iend
-    icall "Gameboy"; echo $gb \"$1\"; iend
-    icall "GB Color"; echo $gbc \"$1\"; iend
-    icall "GB Advanced"; echo $gba \"$1\"; iend
-    icall "Nintendo DS"; echo $nds \"$1\"; iend
-    icall "Nintendo 64"; echo $n64 \"$1\"; iend
-    icall "Playstation 1"; echo $ps1 \"$1\"; iend
-    icall "Gamecube"; echo $cube \"$1\"; iend
-    icall "Wii"; echo $wii \"$1\"; iend
+    icall "Nintendo"; echo "$nes $1"; iend
+    icall "Super Nintendo"; echo "$snes $1"; iend
+    icall "Gameboy"; echo "$gb $1"; iend
+    icall "GB Color"; echo "$gbc $1"; iend
+    icall "GB Advanced"; echo "$gba $1"; iend
+    icall "Nintendo DS"; echo "$nds $1"; iend
+    icall "Nintendo 64"; echo "$n64 $1"; iend
+    icall "Playstation 1"; echo "$ps1 $1"; iend
+    icall "Gamecube"; echo "$cube $1"; iend
+    icall "Wii"; echo "$wii $1"; iend
   mend;}
 function file_menus () {
    if [ -z $menus ]; then
@@ -152,13 +156,13 @@ function file_menus () {
   else icall "$3"; echo "$1 \"$2\""; iend ;fi;}
 function disk_menu () {
   mcall "$2"
-    icall "Playstation 1"; echo $ps1 \"$1\"; iend
-    if [ -z $menus]; then icall "show terminal"; echo "$te $ps1 \"$1\""; iend; seperator ;fi
-    icall "Gamecube"; echo $cube \"$1\"; iend
-    if [ -z $menus]; then icall "show terminal"; echo "$te $ps1 \"$1\""; iend; seperator ;fi
-    icall "Wii"; echo $wii \"$1\"; iend
-    if [ -z $menus]; then icall "show terminal"; echo "$te $ps1 \"$1\""; iend; seperator ;fi
-    if [ $@ < 3 ]; then icall "make playlist"; echo "$script -l "; iend ;fi
+    icall "Playstation 1"; echo "$ps1 $1"; iend
+    if [ -z $menus ]; then icall "show terminal"; echo "$te $ps1 \"$1\""; iend; seperator ;fi
+    icall "Gamecube"; echo "$cube $1"; iend
+    if [ -z $menus ]; then icall "show terminal"; echo "$te $ps1 \"$1\""; iend; seperator ;fi
+    icall "Wii"; echo "$wii $1"; iend
+    if [ -z $menus ]; then icall "show terminal"; echo "$te $ps1 \"$1\""; iend; seperator ;fi
+    if [ "$#" -lt 3 ]; then icall "make playlist"; echo "$script -l "; iend ;fi
   mend ;}
 function file_logic () {
   case "$1" in
@@ -192,20 +196,19 @@ function file_logic () {
     *)
       echo "<!-- $2 does not get an entry -->"
   esac ;}
-function tmp () {
-  #ls -ohQ $path
-  local label="${1%%*\ }"
-  local size="${1##$USER*}"
-  size="${size#\ *}"
-  size="${size%%*\ }"
-  mcall "$label"
-    separator "$perms"
-    separator "size $size"
-    icall "emulator"; echo ""; iend
-    icall "show terminal"; echo ""; iend
-    pcall "-p $file" "other emulators"
-  mend
-;}
+#~ function tmp () {
+  #~ #ls -ohQ $path
+  #~ local declare label="${1%%*\ }"
+  #~ local declare size="${1##$USER*}"
+  #~ size="${size#\ *}"
+  #~ size="${size%%*\ }"
+  #~ mcall "$label"
+    #~ separator "$perms"
+    #~ separator "size $size"
+    #~ icall "emulator"; echo ""; iend
+    #~ icall "show terminal"; echo ""; iend
+    #~ pcall "-p $file" "other emulators"
+  #~ mend;}
 function pathway () {
   while read l; do
     case $l in
@@ -219,7 +222,7 @@ function pathway () {
         dir="${l%\"*}"
         dir="${dir##*\"}"
         entry="${dir##*\/}"
-        pcall "-p $dir -i $id_header" "$entry"
+        pcall "-p $path$dir" "$entry"
         ;;
       l*)
         entry="${l#*\"}"
@@ -228,20 +231,20 @@ function pathway () {
         link="${link##*\"}"
         if [ -d "$link" ]; then
           entry="${entry##\/*}"
-          pcall "-p $link -i $id_header" "$entry"
+          pcall "-p $link" "$entry"
         else
           entry="${entry%*\.}"
           file_logic "$link" "$entry"
         fi
         ;;
     esac
-  done <<< "$(ls -ohQ $1|grep -v ^total)" ;}
+  done <<< "$(ls -ohQ "$1"|grep -v ^total)" ;}
 # pipemenu
 if [ -z $recursion ]; then
   # start of pipemenu
   echo "<openbox_pipe_menu>"
     icall "Roms Folder"
-      echo $fm $path
+      echo "$fm $path"
     iend
     separator
     mcall "Emulator List"
@@ -258,7 +261,7 @@ if [ -z $recursion ]; then
       icall "Wii handled by '$wii'" ; echo ""; iend
     mend
     separator
-    pathway $path
+    pathway "$path"
   #end of pipemenu
   echo "</openbox_pipe_menu>"
   exit 0
@@ -266,30 +269,11 @@ else
   # Pipemenu Entry
   echo "<openbox_pipe_menu>"
     menu_id #ticking menu_id for pcall
-    pathway $path
+    pathway "$path"
   echo "</openbox_pipe_menu>"
 fi #if [ -z $recursion ]; then
 exit 0
-# playlist for mednafen
-# create playlist from folder
-#
-# ls -lQ|grep -v ^total
 # show file size and permmissions?
 # have to add -h for human readable
-# show emulator?
 # show archives?
-# toggle for emulator select instead of auto start?
 # if toggle, generate help menu?
-#
-# |dir display|file display |link file    |disk menu
-#---------------------------------------------------
-# |open folder|perms        |filename     |emulator
-# |(separator)|size         |perms        |show terminal
-# |file or dir|emulator     |size         |(separator)
-# |file or dir|show terminal|emulator     |emulator
-# |file or dir|emulator list|show terminal|show terminal
-# |file or dir|             |emulator list|(separator)
-# |file or dir|             |open folder  |emulator
-# |file or dir|             |             |show terminal
-# |file or dir|             |             |(separator)
-# |file or dir|             |             |make playlist
