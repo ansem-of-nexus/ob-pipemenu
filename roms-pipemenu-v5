@@ -149,6 +149,7 @@ function file_menu () {
    if [ ! -z $menus ]; then
     mcall "$3"
       separator "$1"
+      separator "Size: $size"
       icall "run"; echo "$1 \"$2\""; iend
       icall "show terminal"; echo "$te $1 \"$2\""; iend
       separator
@@ -157,45 +158,46 @@ function file_menu () {
   else icall "$3"; echo "$1 \"$2\""; iend ;fi;}
 function disk_menu () {
   mcall "$2"
+    if [ ! -z $menus ]; then separator "Size: $3" ;fi
     icall "Playstation 1"; echo "$ps1 $1"; iend
     if [ ! -z $menus ]; then icall "show terminal"; echo "$te $ps1 \"$1\""; iend; separator ;fi
     icall "Gamecube"; echo "$cube $1"; iend
     if [ ! -z $menus ]; then icall "show terminal"; echo "$te $ps1 \"$1\""; iend; separator ;fi
     icall "Wii"; echo "$wii $1"; iend
     if [ ! -z $menus ]; then icall "show terminal"; echo "$te $ps1 \"$1\""; iend; separator ;fi
-    if [ "$#" -gt 2 ]; then icall "make playlist"; echo "$script -l "; iend ;fi
+    if [ "$#" -gt 3 ]; then icall "make playlist"; echo "$script -l "; iend ;fi
   mend ;}
 function file_logic () {
   case "$1" in
     *.nes)
-      file_menu "$nes" "$1" "$2"
+      file_menu "$nes" "$1" "$2" "$3"
       ;;
     *.smc|*.snes)
-      file_menu "$snes" "$1" "$2"
+      file_menu "$snes" "$1" "$2" "$3"
       ;;
     *.gb)
-      file_menu "$gb" "$1" "$2"
+      file_menu "$gb" "$1" "$2" "$3"
       ;;
     *.gbc)
-      file_menu "$gbc" "$1" "$2"
+      file_menu "$gbc" "$1" "$2" "$3"
       ;;
     *.gba)
-      file_menu "$gba" "$1" "$2"
+      file_menu "$gba" "$1" "$2" "$3"
       ;;
     *.nds)
-      file_menu "$nds" "$1" "$2"
+      file_menu "$nds" "$1" "$2" "$3"
       ;;
     *.v64)
-      file_menu "$n64" "$1" "$2"
+      file_menu "$n64" "$1" "$2" "$3"
       ;;
     *.iso|*.cue)
-      disk_menu "$1" "$2" 1
+      disk_menu "$1" "$2" "$3" 1
       ;;
     *.m3u)
-      disk_menu "$1" "$2"
+      disk_menu "$1" "$2" "$3"
       ;;
     *)
-      echo "<!-- $2 does not get an entry -->"
+      echo "<!-- $1 does not get an entry -->"
   esac ;}
 function pathway () {
   while read l; do
@@ -204,13 +206,18 @@ function pathway () {
         file="${l#*\"}"
         file="${file%%\"*}"
         entry="${file%\.*}"
-        file_logic "$file" "$entry"
+        size="${l#*$USER}"
+        echo "$size"
+        size="${size##*( )}"
+        echo "$size"
+        size="${size%%\ *}"
+        echo "$size"
+        #file_logic "$file" "$entry" "$size"
         ;;
       d*)
         dir="${l%\"*}"
         dir="${dir##*\"}"
         entry="${dir##*\/}"
-        echo "$dir | $entry"
         pcall "-p $path$dir" "$entry"
         ;;
       l*)
@@ -223,7 +230,10 @@ function pathway () {
           pcall "-p $link" "$entry"
         else
           entry="${entry%*\.}"
-          file_logic "$link" "$entry"
+          size="${l##*$USER}"
+          size="${size##*( )}"
+          size="${size%%\ *}"
+          file_logic "$link" "$entry" "$size"
         fi
         ;;
     esac
@@ -257,12 +267,10 @@ if [ -z $recursion ]; then
 else
   # Pipemenu Entry
   echo "<openbox_pipe_menu>"
-    menu_id #ticking menu_id for pcall
     pathway "$path"
   echo "</openbox_pipe_menu>"
 fi #if [ -z $recursion ]; then
 exit 0
 # show file size and permmissions?
-# have to add -h for human readable
 # show archives?
 # if toggle, generate help menu?
