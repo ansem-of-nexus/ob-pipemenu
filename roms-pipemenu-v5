@@ -2,6 +2,7 @@
 #
 # add to menus like openbox with a like this:
 # <menu execute="script-name -p /path/to/files/" id="script-name" label="menu name"/>
+#     add -m to expand the default select game into a menu with info and options
 #
 # software list for emulators
 nes='mednafen'
@@ -131,40 +132,40 @@ function pcall () {
   else label="${label/$3/_$3}"; fi
   menu_id
   if [ -z $menus ]; then echo "<menu execute=\""$script" $(sanatize $1) -i "$id_header" -r\" id=\""$script_name"_menu_id_"$id_header"-"$id_number"\" label=\"$label\"/>"
-  else echo "<menu execute=\""$script" $(sanatize $1) -m -i "$id_header" -r\" id=\""$script_name"_menu_id_"$id_header"-"$id_number"\" label=\"$label\"/>"; fi ;}
+  else echo "<menu execute=\""$script" $(sanatize $1) -m -i "$id_header"-"$id_number" -r\" id=\""$script_name"_menu_id_"$id_header"-"$id_number"\" label=\"$label\"/>"; fi ;}
 function emulator_list () {
   mcall "Emulator list"
-    icall "Nintendo"; echo "$nes $1"; iend
-    icall "Super Nintendo"; echo "$snes $1"; iend
-    icall "Gameboy"; echo "$gb $1"; iend
-    icall "GB Color"; echo "$gbc $1"; iend
-    icall "GB Advanced"; echo "$gba $1"; iend
-    icall "Nintendo DS"; echo "$nds $1"; iend
-    icall "Nintendo 64"; echo "$n64 $1"; iend
-    icall "Playstation 1"; echo "$ps1 $1"; iend
-    icall "Gamecube"; echo "$cube $1"; iend
-    icall "Wii"; echo "$wii $1"; iend
+    icall "Nintendo"; echo "$nes $path$1"; iend
+    icall "Super Nintendo"; echo "$snes $path$1"; iend
+    icall "Gameboy"; echo "$gb $path$1"; iend
+    icall "GB Color"; echo "$gbc $path$1"; iend
+    icall "GB Advanced"; echo "$gba $path$1"; iend
+    icall "Nintendo DS"; echo "$nds $path$1"; iend
+    icall "Nintendo 64"; echo "$n64 $path$1"; iend
+    icall "Playstation 1"; echo "$ps1 $path$1"; iend
+    icall "Gamecube"; echo "$cube $path$1"; iend
+    icall "Wii"; echo "$wii $path$1"; iend
   mend;}
 function file_menu () {
    if [ ! -z $menus ]; then
     mcall "$3"
       separator "$1"
       separator "Size: $size"
-      icall "run"; echo "$1 \"$2\""; iend
-      icall "show terminal"; echo "$te $1 \"$2\""; iend
+      icall "run"; echo "$1 \"$path$2\""; iend
+      icall "show terminal"; echo "$te $1 \"$path$2\""; iend
       separator
       emulator_list "$2"
     mend
-  else icall "$3"; echo "$1 \"$2\""; iend ;fi;}
+  else icall "$3"; echo "$1 \"$path$2\""; iend ;fi;}
 function disk_menu () {
   mcall "$2"
     if [ ! -z $menus ]; then separator "Size: $3" ;fi
-    icall "Playstation 1"; echo "$ps1 $1"; iend
-    if [ ! -z $menus ]; then icall "show terminal"; echo "$te $ps1 \"$1\""; iend; separator ;fi
-    icall "Gamecube"; echo "$cube $1"; iend
-    if [ ! -z $menus ]; then icall "show terminal"; echo "$te $ps1 \"$1\""; iend; separator ;fi
-    icall "Wii"; echo "$wii $1"; iend
-    if [ ! -z $menus ]; then icall "show terminal"; echo "$te $ps1 \"$1\""; iend; separator ;fi
+    icall "Playstation 1"; echo "$ps1 $path$1"; iend
+    if [ ! -z $menus ]; then icall "show terminal"; echo "$te $ps1 \"$path$1\""; iend; separator ;fi
+    icall "Gamecube"; echo "$cube $path$1"; iend
+    if [ ! -z $menus ]; then icall "show terminal"; echo "$te $ps1 \"$path$1\""; iend; separator ;fi
+    icall "Wii"; echo "$wii $path$1"; iend
+    if [ ! -z $menus ]; then icall "show terminal"; echo "$te $ps1 \"$path$1\""; iend; separator ;fi
     if [ "$#" -gt 3 ]; then icall "make playlist"; echo "$script -l "; iend ;fi
   mend ;}
 function file_logic () {
@@ -197,7 +198,7 @@ function file_logic () {
       disk_menu "$1" "$2" "$3"
       ;;
     *)
-      echo "<!-- $1 does not get an entry -->"
+      echo "<!-- "$(sanatize "$1")" does not get an entry -->"
   esac ;}
 function pathway () {
   while read l; do
@@ -207,12 +208,9 @@ function pathway () {
         file="${file%%\"*}"
         entry="${file%\.*}"
         size="${l#*$USER}"
-        echo "$size"
-        size="${size##*( )}"
-        echo "$size"
+        size="${size#*\ }"
         size="${size%%\ *}"
-        echo "$size"
-        #file_logic "$file" "$entry" "$size"
+        file_logic "$file" "$entry" "$size"
         ;;
       d*)
         dir="${l%\"*}"
@@ -274,3 +272,4 @@ exit 0
 # show file size and permmissions?
 # show archives?
 # if toggle, generate help menu?
+# fix unquoted spaces being passed to commands
