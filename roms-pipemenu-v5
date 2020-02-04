@@ -150,7 +150,7 @@ function file_menu () {
    if [ ! -z $menus ]; then
     mcall "$3"
       separator "$1"
-      separator "Size: $size"
+      separator "Size: $4"
       icall "run"; echo "$1 \"$path$2\""; iend
       icall "show terminal"; echo "$te $1 \"$path$2\""; iend
       separator
@@ -207,9 +207,8 @@ function pathway () {
         file="${l#*\"}"
         file="${file%%\"*}"
         entry="${file%\.*}"
-        size="${l#*$USER}"
-        size="${size#*\ }"
-        size="${size%%\ *}"
+        size="${l#*$USER }"
+        size="${size::4}"
         file_logic "$file" "$entry" "$size"
         ;;
       d*)
