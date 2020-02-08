@@ -1,0 +1,164 @@
+#!/bin/bash
+#
+# add to menus like openbox with a like this:
+# <menu execute="script-name /path/to/menus/ " id="script-name" label="menu name"/>
+#
+# file manager
+declare -r fm='thunar'
+# editor
+declare -r ed='geany'
+#
+# Do not edit lines passed this point unless you know what you are doing
+#
+# help screen
+function help_screen () {
+  echo "Usage: script [option]"
+  echo "  <menu execute=\"/path/to/script\" id=\"menu id\" label=\"menu name\"/>"
+  echo ""
+  echo "-h (this screen)"
+  echo "-p /path/to/stuff"
+  echo "-i id_number (id number of the menu this is called inside of)"
+  echo "-r (telling scrit that is is being run inside of itself)"
+  echo ""
+  exit 0
+  }
+#voiding variables
+declare path
+declare recursion
+declare id_header
+declare menu
+# making loops ignore spaces
+IFS=$(echo -en "\n\b")
+# functions
+function sanatize () {
+  local input="$1"
+  # sanatizing input
+  input=("${input//</&lt;}")
+  input=("${input//&/&amp;}")
+  input=("${input//>/&gt;}")
+  input=("${input//\"/&quot;}")
+  input=("${input//\'/&apos;}")
+  input=("${input//_/__}")
+  echo $input ;}
+function menu_id () { if [ -z id_number ]; then id_number=0; fi; ((id_number++)) ;}
+function mcall () {
+  menu_id
+  local label="$(sanatize $1)"
+  if [ -z "$2" ]; then label=$label"_"; else label=("${label/$2/_$2}"); fi
+  echo '<menu id="'$script_name'_menu_id_'$id_header'-'$id_number'" label="'$label'">' ;}
+function mend () { echo '</menu>' ;}
+function icall () {
+  local label="$(sanatize $1)"
+  if [ -z "$2" ]; then label=$label"_"; else label=("${label/$2/_$2}"); fi
+  echo '<item label="'$label'"><action name="Execute"><command>' ;}
+function iend () { echo '</command></action></item>' ;}
+function separator () {
+  if [ -z "$*" ]; then
+  echo '<separator/>'
+  else
+  local label="$(sanatize $1)"
+  echo '<separator label="'$label'"/>'; fi ;}
+function pcall () {
+  # order of inputs is command arguments, then label, and then hotkey
+  local label; label="$(sanatize "$2")"
+  #setting hotkey
+  if [ -z "$3" ]; then label+="_"
+  else label="${label/$3/_$3}"; fi
+  menu_id
+  if [ -z $menus ]; then echo "<menu execute=\""$script" $(sanatize $1) -i "$id_header" -r\" id=\""$script_name"_menu_id_"$id_header"-"$id_number"\" label=\"$label\"/>"
+  else echo "<menu execute=\""$script" $(sanatize $1) -m -i "$id_header"-"$id_number" -r\" id=\""$script_name"_menu_id_"$id_header"-"$id_number"\" label=\"$label\"/>"; fi ;}
+function pathway () {
+  while read l; do
+    case $l in
+      \-*)
+        file="${l#*\"}"
+        file="${file%%\"*}"
+        entry="${file%\.*}"
+        size="${l#*$USER }"
+        size="${size::4}"
+        file_logic "$file" "$entry" "$size"
+        ;;
+      d*)
+        dir="${l%\"*}"
+        dir="${dir##*\"}"
+        entry="${dir##*\/}"
+        pcall "-p $path$dir" "$entry"
+        ;;
+      l*)
+        entry="${l#*\"}"
+        entry="${entry%%\"*}"
+        link="${l%\"*}"
+        link="${link##*\"}"
+        if [ -d "$link" ]; then
+          entry="${entry##\/*}"
+          pcall "-p $link" "$entry"
+        else
+          entry="${entry%*\.}"
+          size="${l##*$USER}"
+          size="${size##*( )}"
+          size="${size%%\ *}"
+          file_logic "$link" "$entry" "$size"
+        fi
+        ;;
+    esac
+  done <<< "$(ls -ohQ "$1"|grep -v ^total)" ;}
+# parsing out arguments
+while getopts ":hp:i:rm:" opt; do
+  case $opt in
+    h)
+      help_screen
+      exit 0
+      ;;
+    p)
+      case "${OPTARG}" in
+        */)
+          declare -r path="${OPTARG}"
+          ;;
+        *)
+          declare -r path="${OPTARG}/"
+          ;;
+      esac
+      ;;
+    i)
+      id_header="${OPTARG}"
+      ;;
+    r)
+      recursion=1
+      ;;
+    m)
+      menu="${OPTARG}"
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      help_screen
+      exit 1
+      ;;
+    :)
+      echo "Option -$OPTARG requires an argument." >&2
+      help_screen
+      exit 1
+      ;;
+  esac
+done #while getopts "??" opt; do
+# vars
+#if [ -z "$path" ]; then echo "path must be set with '-p /path/to/stuff'" && exit 1; fi
+if [ -z id_header ]; then id_header=0; fi
+if [ -z $recursion ]; then
+  # if -r is used
+  echo "<openbox_pipe_menu>"
+  echo "<!--pipemenu has been called-->"
+  while read l; do
+    if [[ "$l" = *"<menu execute"* ]]; then
+      echo "1: $l"
+    else
+      echo "0: $l"
+    fi
+  done <<< "$(cat $menu)"
+  echo "</openbox_pipe_menu>"
+else
+  # primary pipemenu
+  echo "<openbox_pipe_menu>"
+  echo "<!--pipemenu has been called again-->"
+  echo "</openbox_pipe_menu>"
+fi #if [ -z $recursion ]; then
+exit 0
