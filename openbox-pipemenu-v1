@@ -65,25 +65,9 @@ function pcall () {
   #setting hotkey
   if [ -z "$3" ]; then label+="_"; else label="${label/$3/_$3}"; fi
   menu_id
-  local o="<menu execute=\""
-  o+="$script $(sanatize $1) -i $id_header -r"
-  o+="\" id=\""
-  o+="$script_name"
-  o+="_menu_id_"
-  o+="$id_header"
-  o+="-"
-  o+="$id_number"
-  o+="\" label=\""
-  o+="$label"
-  o+="\"/>"
-  echo "$o"
-  #if [ -z $menus ]; then echo "<menu execute=\"$script $(sanatize $1) -i $id_header -r\" id=\"${script_name}_menu_id_${id_header}-${id_number}\" label=\"$label\"/>"
-  #else echo "<menu execute=\"$script $(sanatize $1) -i $id_header -m -r\" id=\"${script_name}_menu_id_${id_header}-${id_number}\" label=\"$label\"/>"; fi 
+  echo "<menu execute=\"$script $(sanatize $1) -i $id_header -r\" id=\"${script_name}_menu_id_${id_header}-${id_number}\" label=\"$label\"/>"
   }
 function logic () {
-  echo "$1 | $2"
-  }
-function logic_hold () {
   while read l; do
     case $l in
       \-*)
@@ -123,7 +107,7 @@ function logic_hold () {
     esac
   done <<< "$(ls -ohQ "$1"|grep -v ^total)" ;}
 # parsing out arguments
-while getopts ":hp:i:rm:" opt; do
+while getopts ":hp:i:rm:u:" opt; do
   case $opt in
     h)
       help_screen
@@ -148,6 +132,9 @@ while getopts ":hp:i:rm:" opt; do
     m)
       declare -r menu="${OPTARG}"
       ;;
+    u)
+      declare -r USER="${OPTARG}"
+      ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
       help_screen
@@ -169,18 +156,39 @@ if [ -z $recursion ]; then
   # main pipemenu
   echo "<openbox_pipe_menu>"
   icall "Edit Menu.xml"; echo "$ed $menu"; iend
-  if [ -z "$path" ]; then icall "Open Pipemenu folder"; echo "$fm $path"; iend; fi
+  if [ ! -z "$path" ]; then icall "Open Pipemenu folder"; echo "$fm $path"; iend; fi
   separator
   while read l; do
     if [[ "$l" = *"<menu execute"* ]]; then
-      echo "1: $l"
+      # parsing pipemenu entry
       pipemenu="${l#*execute=\"}"
-      pipemenu="${pipemenu%%\"*}"
+      pipemenu="${pipemenu%%\ *}"
       label="${l#*label=\"}"
       label="${label%%\"*}"
-      logic "$pipemenu" "$label"
-#    else
-#      echo "0: $l"
+      # looking up pipemenu file
+      echo "<!-- command 'ls -hoQ $pipemenu'-->"
+      pipemenu_info="$(ls -hoQ $pipemenu)"
+      echo "<!-- file info '$pipemenu_info'-->"
+      # parsing file entry
+#      perms="${pipemenu_info%%*\ }"
+#      size="${pipemenu_info#$USER *}"
+#      if [ $size = ^" "* ]; then size="${size##( )}"; fi
+#      size="${size%%*\ }"
+#      mcall $label
+#        separator "Perms: $perms"
+#        separator "Size: $size"
+#        icall "Edit"; echo "$ed $pipemenu_file"; iend
+#        if [ $l = ^"<!--" ]; then
+#          icall "enable menu"; echo "$ed $menu"; iend
+#        else
+#          icall "disable menu"; echo "$ed $menu"; iend
+#        fi # if menu is commented out
+#        icall "delete entry"; echo "$ed $pipemenu_file"; iend
+        # replace file with selected file from list
+      mend
+#      pcall "-f $pipemenu" "$label"
+    else
+      echo "<!-- not reconized as pipemenu line '$l' -->"
     fi
   done <<< "$(cat $menu)"
   echo "</openbox_pipe_menu>"
@@ -203,3 +211,21 @@ exit 0
 #   4.4: delete?
 #   4.5: change file
 # files and linked files??
+#while read l; do
+#  if [ ! $l = "${l#$pipemenu_name} "]; then
+#    file_menu $path
+#    break
+#  fi
+#done <<< "$(cat $menu)"
+#
+# call main
+#   reads menu.xml for pipes
+#   each pipe gets menu
+# menu contents
+#   perms
+#   size
+#   edit pipe
+#   delete pipe
+#   replace pipe menu
+#     menu is list from $path
+#
