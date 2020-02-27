@@ -1,0 +1,252 @@
+#!/bin/bash
+#
+# add to menus like openbox with a like this:
+# <menu execute="/path/to/script /path/to/script 'connection info'" id="script-name" label="menu name"/>
+#
+# to do:
+# add switch to change from full list to only active
+# add more characters to the escaped list
+#	sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g; s/'"'"'/\&#39;/g'
+#
+declare -r download_limits=(0 10 100 1000)
+declare -r upload_limits=(0 1 10 100)
+#
+# Don't edit past this line unless you know what you are doing
+#
+#voiding variables
+declare path
+declare recursion
+declare id_header
+declare menu
+# making for loop ignore spaces
+IFS=$(echo -en "\n\b")
+# locking script path
+#~ if [ -f "$1" ]; then declare -r path=$1; else declare -r path=""; fi
+# locking connection info
+#~ declare -r connection=$2
+# functions
+function sanatize () {
+  local input="$1"
+  # sanatizing input
+  input=("${input//</&lt;}")
+  input=("${input//&/&amp;}")
+  input=("${input//>/&gt;}")
+  input=("${input//\"/&quot;}")
+  input=("${input//\'/&apos;}")
+  input=("${input//_/__}")
+  echo $input ;}
+function menu_id () { if [ -z id_number ]; then id_number=0; fi; ((id_number++)) ;}
+function mcall () {
+  menu_id
+  local label="$(sanatize $1)"
+  if [ -z "$2" ]; then label=$label"_"; else label=("${label/$2/_$2}"); fi
+  echo "<menu id=\"${script_name}_menu_id_${id_header}-${id_number}\" label=\"$label\">" ;}
+function mend () { echo '</menu>' ;}
+function icall () {
+  local label="$(sanatize $1)"
+  if [ -z "$2" ]; then label=$label"_"; else label=("${label/$2/_$2}"); fi
+  echo '<item label="'$label'"><action name="Execute"><command>' ;}
+function iend () { echo '</command></action></item>' ;}
+function separator () {
+  if [ -z "$*" ]; then
+  echo '<separator/>'
+  else
+  local label="$(sanatize $1)"
+  echo '<separator label="'$label'"/>'; fi ;}
+function pcall () {
+  # order of inputs is command arguments, then label, and then hotkey
+  local label; label="$(sanatize "$2")"
+  #setting hotkey
+  if [ -z "$3" ]; then label+="_"; else label="${label/$3/_$3}"; fi
+  menu_id
+  echo "<menu execute=\"$script $(sanatize $1) -i $id_header -r\" id=\"${script_name}_menu_id_${id_header}-${id_number}\" label=\"$label\"/>";}
+function spull () {
+  # getting server information
+  s="$(transmission-remote $connection -si)"
+  s_tstatus="${s#*Upload speed limit:}"
+  s_tstatus="${s_tstatus#*; }"
+  s_tstatus="${s_tstatus%% turtle*}"
+  s_dir="${s#*Download directory: }"
+  s_dir="${s_dir%%[[:cntrl:]]*}"
+  s_sr="${s#*Default seed ratio limit: }"
+  s_sr="${s_sr%% *}"
+  # upload information
+  s_gulimit_current="${s#*Upload speed limit: }"
+  s_gulimit_current="${s_gulimit_current%% (*}"
+  s_gulimit_normal="${s#*Upload speed limit: }"
+  s_gulimit_normal="${s_gulimit_normal#*limit: }"
+  s_gulimit_normal="${s_gulimit_normal%%;*}"
+  s_gulimit_turtle="${s#*Upload speed limit: }"
+  s_gulimit_turtle="${s_gulimit_turtle#*turtle limit: }"
+  s_gulimit_turtle="${s_gulimit_turtle%%)*}"
+  s_gulimit_status="${s#*Upload speed limit: }"
+  s_gulimit_status="${s_gulimit_status#*(}"
+  s_gulimit_status="${s_gulimit_status%% *}"
+  # download information
+  s_gdlimit_current="${s#*Download speed limit: }"
+  s_gdlimit_current="${s_gdlimit_current%% (*}"
+  s_gdlimit_normal="${s#*Download speed limit: }"
+  s_gdlimit_normal="${s_gdlimit_normal#*limit: }"
+  s_gdlimit_normal="${s_gdlimit_normal%%;*}"
+  s_gdlimit_turtle="${s#*Download speed limit: }"
+  s_gdlimit_turtle="${s_gdlimit_turtle#*turtle limit: }"
+  s_gdlimit_turtle="${s_gdlimit_turtle%%)*}"
+  s_gdlimit_status="${s#*Download speed limit: }"
+  s_gdlimit_status="${s_gdlimit_status#*(}"
+  s_gdlimit_status="${s_gdlimit_status%% *}"
+  }
+function tpull () {
+  t="$(transmission-remote $connection -t $1 -i)"
+  t_status="${t#*State: }"
+  t_status="${t_status%%[[:cntrl:]]*}"
+  #connection
+  t_perc="${t#*Percent Done: }"
+  t_perc="${t_perc%%[[:cntrl:]]*}"
+  t_avalible="${t#*Availability: }"
+  t_avalible="${t_avalible%%[[:cntrl:]]*}"
+  t_eta="${t#*ETA: }"
+  t_eta="${t_eta%%(*}"
+  t_down="${t#*Download Speed: }"
+  t_down="${t_down%%[[:cntrl:]]*}"
+  t_up="${t#*Upload Speed: }"
+  t_up="${t_up%%[[:cntrl:]]*}"
+  t_dlimit="${t#*Download Limit: }"
+  t_dlimit="${t_dlimit%%[[:cntrl:]]*}"
+  t_ulimit="${t#*Upload Limit: }"
+  t_ulimit="${t_ulimit%%[[:cntrl:]]*}"
+  #general
+  t_added="${t#*Date added: }"
+  t_added="${t_added%%[[:cntrl:]]*}"
+  t_added="${t_added//  /}"
+  t_size="${t#*Total size: }"
+  t_size="${t_size%%(*}"
+  t_path="${t#*Location: }"
+  t_path="${t_path%%[[:cntrl:]]*}"
+  t_sr="${t#*Ratio Limit: }"
+  t_sr="${t_sr%%[[:cntrl:]]*}"
+  t_hl="${t#*Honors Session Limits: }"
+  t_hl="${t_hl%%[[:cntrl:]]*}"
+  }
+function tsec () {
+  # status
+  separator "Status: $t_status"
+  # controls
+  if [ $t_status = "Paused" ] || [ $t_status = "Finished" ] || [ $t_status = "Stopped" ]; then
+    icall "Start"; echo "transmission-remote $connection -t $1 -s"; iend
+  else
+    icall "Stop"; echo "transmission-remote $connection -t $1 -S"; iend
+  fi #if [[ $t_status = "Paused" ]]; then
+  mcall "Remove"
+    mcall "Remove Torrent"; icall "Yes"; echo "transmission-remote $connection -t $1 -r"; iend; mend
+    mcall "Remove Torrent and Data"; icall "yes"; echo "transmission-remote $connection -t $1 -rad"; iend; mend
+  mend
+  separator
+  mcall "Down Limit: $t_dlimit"
+    icall "Disable Limit"; echo "transmission-remote $connection -t $1 -D"; iend
+    separator
+    for i in "${download_limits[@]}"; do icall "Set to $i KB/s"; echo "transmission-remote $connection -t $1 -d $i"; iend; done
+    #~ unset i #sanatizing i
+  mend
+  mcall "Up Limit: $t_ulimit"
+    icall "Disable Limit"; echo "transmission-remote $connection -t $1 -U"; iend
+    separator
+    for i in "${upload_limits[@]}"; do icall "Set to $i KB/s"; echo "transmission-remote $connection -t $1 -u $i"; iend; done
+    #~ unset i #sanatizing i
+  mend
+  icall "Honor Limits: $t_hl"
+    if [ $t_hl = "No" ]; then echo "transmission-remote $connection -t $1 -hl"
+    else echo "transmission-remote $connection -t $1 -HL"; fi
+  iend
+  # connection info downloading
+  separator "Have/Avalible: $t_perc / $t_avalible"
+  separator "ETA: $t_eta"
+  separator "Down/Up: $t_down / $t_up"
+  # general info
+  mcall "General Info"
+    separator "Added: $t_added"
+    separator "Total Size: $t_size"
+    separator "Seed Ratio: $t_sr"
+    separator "Path: $t_path"
+  mend
+  }
+# vars
+declare -r script="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+declare -r script_name="$(basename "${BASH_SOURCE[0]}")"
+#~ if [ -z $menu ]; then echo "menu must be set with '-m /path/to/menu.xml'" && exit 1; fi
+if [ -z $id_header ]; then id_header="m"; fi
+#~ if [ -z $recursion ]; then
+# menu logic
+if [ $# -gt 2 ]; then
+  #single torrent pipemenu
+  echo "<openbox_pipe_menu>"
+    menu_id #ticking menu_id for pcall
+    tpull $3
+    tsec $3
+  echo "</openbox_pipe_menu>"
+else
+  spull
+  # start of menu
+  echo "<openbox_pipe_menu>"
+    if [ -z $connection ]; then separator "Connected to localhost"
+    else separator "Connected to $connection"; fi
+    if [ $s_gdlimit_status = "Enabled" ]; then
+      icall "Global Down Limit: $s_gdlimit_status"; echo "transmission-remote -D"; iend
+    else separator "Global Down Limit: $s_gdlimit_status"; fi
+    if [ $s_gulimit_status = "Enabled" ]; then
+      icall "Global Up Limit: $s_gulimit_status"; echo "transmission-remote -U"; iend
+    else separator "Global Up Limit: $s_gulimit_status"; fi
+    if [ $s_tstatus = "Enabled" ]; then
+      icall "Turtle Status: $s_tstatus"; echo "transmission-remote -AS"; iend
+    else separator "Turtle Status: $s_tstatus"; fi
+    separator "Default Dir: $s_dir"
+    mcall "Transmission Controls"
+      if [[ $s_tstatus = Dis* ]]; then icall "Enable Turtle"; echo "transmission-remote $connection -as"; iend
+      else icall "Disable Turtle"; echo "transmission-remote $connection -AS"; iend; fi #if [[ $s_tstauts = "Disable" ]]; then
+      separator "Current Down Limit: $s_gdlimit_current"
+      mcall "Global Down Limit: $s_gdlimit_normal"
+        icall "Disable"; echo "transmission-remote $connection -D"; iend
+        separator
+        for i in "${download_limits[@]}"; do icall "Set to $i KB/s"; echo "transmission-remote $connection -d $i"; iend; done
+      mend
+      mcall "Turtle Down Limit: $s_gdlimit_turtle"
+        for i in "${download_limits[@]}"; do icall "Set to $i KB/s"; echo "transmission-remote $connection -asd $i"; iend; done
+      mend
+      separator "Current Up Limit: $s_gulimit_current"
+      mcall "Global Up Limit: $s_gulimit_normal"
+        icall "Disable"; echo "transmission-remote $connection -U"; iend
+        separator
+        for i in "${upload_limits[@]}"; do icall "Set to $i KB/s"; echo "transmission-remote $connection -u $i"; iend; done
+      mend
+      mcall "Turtle Up Limit: $s_gulimit_turtle"
+        for i in "${upload_limits[@]}"; do icall "Set to $i KB/s"; echo "transmission-remote $connection -asu $i"; iend; done
+      mend
+      separator
+      mcall "Transmission Shutdown"; icall "Yes"; echo "transmission-remote $connection --exit"; iend; mend
+    mend
+    separator "Torrents"
+    # pulling torrent list
+    i=0
+    while read l; do
+      t_id=${l::4}
+      t_id=${t_id// /}
+      t_name=${l:70}
+      if [ -z "$path" ]; then
+        # path to pipemenu was not given, requests for all torrents will be run at time of menu creation
+        if [[ ! $t_id = "ID" ]] && [[ ! $t_id = "Sum:" ]]; then
+          tpull $t_id
+          mcall "id $t_id: $t_name"
+            tsec $t_id
+          mend
+        fi #if [[ ! $t_id = "ID" ]] && [[ ! $t_id = "Sum:" ]]; then
+      else #if [[ -z "$path" ]]; then
+        # path to pipemenu was given, requests for all torrents will be run at time of selection
+        if [[ ! $t_id = "ID" ]] && [[ ! $t_id = "Sum:" ]]; then
+          pcall "id $t_id: $t_name" $t_id $id_number
+          for t in {1..5}; do menu_id; done; unset t #ticking menu_id for pcall
+        fi #if [[ ! $t_id = "ID" ]] && [[ ! $t_id = "Sum:" ]]; then
+      fi #if [[ -z "$path" ]]; then
+    done <<< "$(transmission-remote $connection -l)"
+  #end of pipemenu
+  echo "</openbox_pipe_menu>"
+fi #if [ $# -gt 2 ]; then
+exit 0
