@@ -46,7 +46,7 @@ function mcall () {
   menu_id
   local label="$(sanatize $1)"
   if [ -z "$2" ]; then label=$label"_"; else label=("${label/$2/_$2}"); fi
-  echo '<menu id="'$script_name'_menu_id_'$id_header'-'$id_number'" label="'$label'">' ;}
+  echo "<menu id=\"${script_name}_menu_id_${id_header}-${id_number}\" label=\"$label\">" ;}
 function mend () { echo '</menu>' ;}
 function icall () {
   local label="$(sanatize $1)"
@@ -59,55 +59,55 @@ function separator () {
   else
   local label="$(sanatize $1)"
   echo '<separator label="'$label'"/>'; fi ;}
-function pcall () {
-  # order of inputs is command arguments, then label, and then hotkey
-  local label; label="$(sanatize "$2")"
-  #setting hotkey
-  if [ -z "$3" ]; then label+="_"; else label="${label/$3/_$3}"; fi
-  menu_id
-  echo "<menu execute=\"$script $(sanatize $1) -i $id_header -r\" id=\"${script_name}_menu_id_${id_header}-${id_number}\" label=\"$label\"/>"
-  }
-function logic () {
-  while read l; do
-    case $l in
-      \-*)
-        perms="${l%%\ *}"
-        file="${l#*\"}"
-        file="${file%%\"*}"
-        size="${l#*$USER }"
-        size="${size::4}"
-        separator "$perms"
-        separator "$size"
-        icall "Edit"; echo "$ed $file"; iend
-        icall "Delete"; echo "$ed $file"; iend
-        logic "$path" "$label"
-        ;;
-      d*)
-        dir="${l%\"*}"
-        dir="${dir##*\"}"
-        entry="${dir##*\/}"
-        pcall "-p $path$dir" "$entry"
-        ;;
-      l*)
-        entry="${l#*\"}"
-        entry="${entry%%\"*}"
-        link="${l%\"*}"
-        link="${link##*\"}"
-        if [ -d "$link" ]; then
-          entry="${entry##\/*}"
-          pcall "-p $link" "$entry"
-        else
-          entry="${entry%*\.}"
-          size="${l##*$USER}"
-          size="${size##*( )}"
-          size="${size%%\ *}"
-          file_logic "$link" "$entry" "$size"
-        fi
-        ;;
-    esac
-  done <<< "$(ls -ohQ "$1"|grep -v ^total)" ;}
+#function pcall () {
+#  # order of inputs is command arguments, then label, and then hotkey
+#  local label; label="$(sanatize "$2")"
+#  #setting hotkey
+#  if [ -z "$3" ]; then label+="_"; else label="${label/$3/_$3}"; fi
+#  menu_id
+#  echo "<menu execute=\"$script $(sanatize $1) -i $id_header -r\" id=\"${script_name}_menu_id_${id_header}-${id_number}\" label=\"$label\"/>"
+#  }
+#function logic () {
+#  while read l; do
+#    case $l in
+#      \-*)
+#        perms="${l%%\ *}"
+#        file="${l#*\"}"
+#        file="${file%%\"*}"
+#        size="${l#*$USER }"
+#        size="${size::4}"
+#        separator "$perms"
+#        separator "$size"
+#        icall "Edit"; echo "$ed $file"; iend
+#        icall "Delete"; echo "$ed $file"; iend
+#        logic "$path" "$label"
+#        ;;
+#      d*)
+#        dir="${l%\"*}"
+#        dir="${dir##*\"}"
+#        entry="${dir##*\/}"
+#        pcall "-p $path$dir" "$entry"
+#        ;;
+#      l*)
+#        entry="${l#*\"}"
+#        entry="${entry%%\"*}"
+#        link="${l%\"*}"
+#        link="${link##*\"}"
+#        if [ -d "$link" ]; then
+#          entry="${entry##\/*}"
+#          pcall "-p $link" "$entry"
+#        else
+#          entry="${entry%*\.}"
+#          size="${l##*$USER}"
+#          size="${size##*( )}"
+#          size="${size%%\ *}"
+#          file_logic "$link" "$entry" "$size"
+#        fi
+#        ;;
+#    esac
+#  done <<< "$(ls -ohQ "$1"|grep -v ^total)" ;}
 # parsing out arguments
-while getopts ":hp:i:rm:u:" opt; do
+while getopts ":hp:i:rm:" opt; do
   case $opt in
     h)
       help_screen
@@ -132,9 +132,6 @@ while getopts ":hp:i:rm:u:" opt; do
     m)
       declare -r menu="${OPTARG}"
       ;;
-    u)
-      declare -r USER="${OPTARG}"
-      ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
       help_screen
@@ -150,8 +147,8 @@ done #while getopts "??" opt; do
 # vars
 declare -r script="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
 declare -r script_name="$(basename "${BASH_SOURCE[0]}")"
-if [ -z "$menu" ]; then echo "menu must be set with '-m /path/to/menu.xml'" && exit 1; fi
-if [ -z id_header ]; then id_header="m"; fi
+if [ -z $menu ]; then echo "menu must be set with '-m /path/to/menu.xml'" && exit 1; fi
+if [ -z $id_header ]; then id_header="m"; fi
 if [ -z $recursion ]; then
   # main pipemenu
   echo "<openbox_pipe_menu>"
@@ -167,28 +164,28 @@ if [ -z $recursion ]; then
       label="${label%%\"*}"
       # looking up pipemenu file
       echo "<!-- command 'ls -hoQ $pipemenu'-->"
-      pipemenu_info="$(ls -hoQ $pipemenu)"
-      echo "<!-- file info '$pipemenu_info'-->"
+      file="$(ls -hoQ $pipemenu|grep -v ^total)"
+      echo "<!-- file info: $file-->"
       # parsing file entry
-#      perms="${pipemenu_info%%*\ }"
-#      size="${pipemenu_info#$USER *}"
+      perms="${file%%*\ }"
+      size="${file#$USER *}"
 #      if [ $size = ^" "* ]; then size="${size##( )}"; fi
-#      size="${size%%*\ }"
-#      mcall $label
-#        separator "Perms: $perms"
-#        separator "Size: $size"
-#        icall "Edit"; echo "$ed $pipemenu_file"; iend
-#        if [ $l = ^"<!--" ]; then
-#          icall "enable menu"; echo "$ed $menu"; iend
-#        else
-#          icall "disable menu"; echo "$ed $menu"; iend
-#        fi # if menu is commented out
-#        icall "delete entry"; echo "$ed $pipemenu_file"; iend
+      size="${size%%*\ }"
+      mcall "$label"
+        separator "Perms: $perms"
+        separator "Size: $size"
+        icall "Edit"; echo "$ed $pipemenu"; iend
+        if [ $l = ^"<!--" ]; then
+          icall "enable menu"; echo "$ed $menu"; iend
+        else
+          icall "disable menu"; echo "$ed $menu"; iend
+        fi # if menu is commented out
+        icall "delete entry"; echo "$ed $menu"; iend
         # replace file with selected file from list
       mend
 #      pcall "-f $pipemenu" "$label"
-    else
-      echo "<!-- not reconized as pipemenu line '$l' -->"
+#    else
+#      echo "<!-- not reconized as pipemenu line '$l' -->"
     fi
   done <<< "$(cat $menu)"
   echo "</openbox_pipe_menu>"

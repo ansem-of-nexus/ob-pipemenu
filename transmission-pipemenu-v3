@@ -13,11 +13,24 @@ declare -r upload_limits=(0 1 10 100)
 #
 # Don't edit past this line unless you know what you are doing
 #
+# help screen
+function help_screen () {
+  echo "Usage: pipemenu for openbox menu.xml"
+  echo "  <menu execute=\"/path/to/script [options]\" id=\"menu id\" label=\"menu name\"/>"
+  echo ""
+  echo "-h (this screen)"
+  echo "-c remote connection information"
+  echo "-m seperate torrent information calls, to limit requests"
+  echo "-t torrent id for recusive call"
+  echo "-i id_header (id header and id_number of the menu this is called inside of)"
+  echo "-r (telling script that is is being run inside of itself)"
+  echo ""
+  exit 0
+  }
 #voiding variables
-declare path
 declare recursion
 declare id_header
-declare menu
+declare multicall
 # making for loop ignore spaces
 IFS=$(echo -en "\n\b")
 # locking script path
@@ -169,23 +182,49 @@ function tsec () {
     separator "Path: $t_path"
   mend
   }
+# parsing out arguments
+while getopts ":hc:mt:i:r" opt; do
+  case $opt in
+    h)
+      help_screen
+      exit 0
+      ;;
+    c)
+      connection="${OPTARG}"
+      ;;
+    m)
+      multicall=1
+      ;;
+    t)
+      t_id="${OPTARG}"
+      ;;
+    i)
+      id_header="${OPTARG}"
+      ;;
+    r)
+      recursion=1
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      help_screen
+      exit 1
+      ;;
+    :)
+      echo "Option -$OPTARG requires an argument." >&2
+      help_screen
+      exit 1
+      ;;
+  esac
+done #while getopts "??" opt; do
 # vars
 declare -r script="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
 declare -r script_name="$(basename "${BASH_SOURCE[0]}")"
 #~ if [ -z $menu ]; then echo "menu must be set with '-m /path/to/menu.xml'" && exit 1; fi
 if [ -z $id_header ]; then id_header="m"; fi
-#~ if [ -z $recursion ]; then
 # menu logic
-if [ $# -gt 2 ]; then
-  #single torrent pipemenu
-  echo "<openbox_pipe_menu>"
-    menu_id #ticking menu_id for pcall
-    tpull $3
-    tsec $3
-  echo "</openbox_pipe_menu>"
-else
+if [ -z $recursion ]; then
+  # main menu call
   spull
-  # start of menu
   echo "<openbox_pipe_menu>"
     if [ -z $connection ]; then separator "Connected to localhost"
     else separator "Connected to $connection"; fi
@@ -225,12 +264,11 @@ else
     mend
     separator "Torrents"
     # pulling torrent list
-    i=0
     while read l; do
       t_id=${l::4}
       t_id=${t_id// /}
       t_name=${l:70}
-      if [ -z "$path" ]; then
+      if [ -z "$multicall" ]; then
         # path to pipemenu was not given, requests for all torrents will be run at time of menu creation
         if [[ ! $t_id = "ID" ]] && [[ ! $t_id = "Sum:" ]]; then
           tpull $t_id
@@ -241,12 +279,20 @@ else
       else #if [[ -z "$path" ]]; then
         # path to pipemenu was given, requests for all torrents will be run at time of selection
         if [[ ! $t_id = "ID" ]] && [[ ! $t_id = "Sum:" ]]; then
-          pcall "id $t_id: $t_name" $t_id $id_number
+          pcall "-t $t_id" $t_name
           for t in {1..5}; do menu_id; done; unset t #ticking menu_id for pcall
         fi #if [[ ! $t_id = "ID" ]] && [[ ! $t_id = "Sum:" ]]; then
       fi #if [[ -z "$path" ]]; then
     done <<< "$(transmission-remote $connection -l)"
   #end of pipemenu
+  echo "</openbox_pipe_menu>"
+else
+  # recursive call
+  echo "<!--recursive call-->"
+  echo "<openbox_pipe_menu>"
+    #~ menu_id #ticking menu_id for pcall
+    tpull $t_id
+    tsec $t_id
   echo "</openbox_pipe_menu>"
 fi #if [ $# -gt 2 ]; then
 exit 0
