@@ -160,17 +160,17 @@ if [ -z $recursion ]; then
       # parsing pipemenu entry
       pipemenu="${l#*execute=\"}"
       pipemenu="${pipemenu%%\ *}"
+      #~ if [[ $pipemenu = ^\~* ]]; then pipemenu="${pipemenu/\~/\/home\/$USER\/}"; fi
+      pipemenu="${pipemenu/\~/\/home\/$USER}"
       label="${l#*label=\"}"
       label="${label%%\"*}"
       # looking up pipemenu file
-      echo "<!-- command 'ls -hoQ $pipemenu'-->"
-      file="$(ls -hoQ $pipemenu|grep -v ^total)"
-      echo "<!-- file info: $file-->"
+      file="$(ls -hoQ $pipemenu)"
       # parsing file entry
-      perms="${file%%*\ }"
-      size="${file#$USER *}"
-#      if [ $size = ^" "* ]; then size="${size##( )}"; fi
-      size="${size%%*\ }"
+      perms="${file::10}"
+      size="${file#*$USER }"
+      if [[ $size = ^\ * ]]; then size="${size##( )}"; fi
+      size="${size%%\ *}"
       mcall "$label"
         separator "Perms: $perms"
         separator "Size: $size"
