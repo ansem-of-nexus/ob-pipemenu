@@ -160,7 +160,7 @@ function disk_menu () {
     if [ ! -z $menus ]; then icall "show terminal"; echo "$te $ps1 \"$path$1\""; iend; separator ;fi
     icall "Wii"; echo "$wii $path$1"; iend
     if [ ! -z $menus ]; then icall "show terminal"; echo "$te $ps1 \"$path$1\""; iend; separator ;fi
-    if [ "$#" -gt 3 ]; then icall "make playlist"; echo "$script -l "; iend ;fi
+    if [ "$#" -gt 3 ]; then icall "make playlist"; echo "$script -p \"$path\" -l"; iend ;fi
   mend ;}
 function file_logic () {
   case "$1" in
@@ -219,17 +219,16 @@ if [ -z $recursion ]; then
     iend
     separator
     mcall "Emulator List"
-      separator "Emulator followed by Command"
-      icall "Nintendo handled by '$nes'" ; echo ""; iend
-      icall "Super Nintendo handle by '$snes'" ; echo ""; iend
-      icall "Gameboy handled by '$gb'" ; echo ""; iend
-      icall "Gameboy Color handled by '$gbc'" ; echo ""; iend
-      icall "Gameboy Advance handled by '$gba'" ; echo ""; iend
-      icall "Playstation 1 handled by '$ps1'" ; echo ""; iend
-      icall "Nitendo DS handled by '$nds'" ; echo ""; iend
-      icall "Nitendo 64 handled by '$n64'" ; echo ""; iend
-      icall "Gamecube handled by '$cube'" ; echo ""; iend
-      icall "Wii handled by '$wii'" ; echo ""; iend
+      separator "Nintendo handled by '$nes'"
+      separator "Super Nintendo handle by '$snes'"
+      separator "Gameboy handled by '$gb'"
+      separator "Gameboy Color handled by '$gbc'"
+      separator "Gameboy Advance handled by '$gba'"
+      separator "Playstation 1 handled by '$ps1'"
+      separator "Nitendo DS handled by '$nds'"
+      separator "Nitendo 64 handled by '$n64'"
+      separator "Gamecube handled by '$cube'"
+      separator "Wii handled by '$wii'"
     mend
     separator
     pathway "$path"
@@ -246,4 +245,3 @@ exit 0
 # show file size and permmissions?
 # show archives?
 # if toggle, generate help menu?
-# fix unquoted spaces being passed to commands
