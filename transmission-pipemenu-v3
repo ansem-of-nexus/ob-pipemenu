@@ -53,11 +53,8 @@ function icall () {
   echo "<item label=\""$label"\"><action name=\"Execute\"><command>" ;}
 function iend () { echo "</command></action></item>" ;}
 function separator () {
-  if [ -z "$*" ]; then
-  echo '<separator/>'
-  else
-  local label; label="$(sanatize "$1")"
-  echo "<separator label=\""$label"\"/>"; fi ;}
+  if [ -z "$*" ]; then echo '<separator/>'
+  else local label="$(sanatize $1)"; echo '<separator label="'$label'"/>'; fi ;}
 function pcall () {
   # order of inputs is command arguments, then label, and then hotkey
   local label; label="$(sanatize "$2")"

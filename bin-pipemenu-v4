@@ -38,11 +38,8 @@ function icall () {
   echo '<item label="'$label'"><action name="Execute"><command>' ;}
 function iend () { echo '</command></action></item>' ;}
 function separator () {
-  if [ -z "$*" ]; then
-  echo '<separator/>'
-  else
-  local label="$(sanatize $1)"
-  echo '<separator label="'$label'"/>'; fi ;}
+  if [ -z "$*" ]; then echo '<separator/>'
+  else local label="$(sanatize $1)"; echo '<separator label="'$label'"/>'; fi ;}
 # start of pipemenu
 echo "<openbox_pipe_menu>"
   icall "Bin Folder"
@@ -78,7 +75,7 @@ echo "<openbox_pipe_menu>"
         mend
         separator
       else separator $file_perms; fi
-      icall "edit"; echo "$ed $1$file_name"; iend
+      icall "edit"; echo "$ed /home/$USER/bin/$file_name"; iend
       if [[ $file_perms == *x* ]]; then
         icall "chmod -x"; echo "chmod -x /home/$USER/bin/$file_name"; iend
         mcall "Run"
