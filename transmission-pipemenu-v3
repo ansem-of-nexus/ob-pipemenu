@@ -65,7 +65,7 @@ function pcall () {
   if [ -z "$3" ]; then label+="_"
   else label="${label/$3/_$3}"; fi
   menu_id
-  if [ -z $menus ]; then echo "<menu execute=\""$script" $(sanatize $1) -i "$id_header" -r\" id=\""$script_name"_menu_id_"$id_header"-"$id_number"\" label=\"$label\"/>"
+  if [ -z $menus ]; then echo "<menu execute=\""$script" $(sanatize $1) -i "$id_header"-"$id_number" -r\" id=\""$script_name"_menu_id_"$id_header"-"$id_number"\" label=\"$label\"/>"
   else echo "<menu execute=\""$script" $(sanatize $1) -m -i "$id_header"-"$id_number" -r\" id=\""$script_name"_menu_id_"$id_header"-"$id_number"\" label=\"$label\"/>"; fi ;}
 function spull () {
   # getting server information
@@ -143,6 +143,7 @@ function tsec () {
   else
     icall "Stop"; echo "transmission-remote $connection -t $1 -S"; iend
   fi #if [[ $t_status = "Paused" ]]; then
+  separator
   mcall "Remove"
     mcall "Remove Torrent"; icall "Yes"; echo "transmission-remote $connection -t $1 -r"; iend; mend
     mcall "Remove Torrent and Data"; icall "yes"; echo "transmission-remote $connection -t $1 -rad"; iend; mend
