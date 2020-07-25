@@ -15,32 +15,20 @@ function help_screen () {
   echo "  <menu execute=\"/path/to/script -p /path/to/music\" id=\"menu id\" label=\"menu name\"/>"
   echo "-h (this screen)"
   echo "-p /path/to/stuff"
-  echo "-i id_number (id number of the menu this is called inside of)"
-  echo "-r (telling scrit that is is being run inside of itself)"
   echo ""
   exit 0 ;}
 # making for loop ignore spaces
 IFS=$(echo -en "\n\b")
 # voiding variables
 path=""
-id_number="0"
-recursion=""
 # parsing out arguments
-while getopts ":hp:i:r" opt; do
+while getopts ":hp:" opt; do
   case $opt in
     h)
       help_screen
       exit 0
     ;;
-    p)
-      declare -r path="${OPTARG}"
-    ;;
-    i)
-      id_number="${OPTARG}"
-    ;;
-    r)
-      declare -r recursion=1
-    ;;
+    p) declare -r path="${OPTARG}" ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
       help_screen
@@ -53,18 +41,11 @@ while getopts ":hp:i:r" opt; do
     ;;
   esac #case $opt in
 done #while getopts "??" opt; do
-# setting script information
-script="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
-script_name="$(basename "${BASH_SOURCE[0]}")"
-# checking for id_number
+# checking for id_header
 if [ -z $id_header ]; then id_header=0; fi
-# making for loop ignore spaces
-IFS=$(echo -en "\n\b")
 # checking if moc is running
 status=$(pidof mocp)
-if [ ! $status = null ]; then
-  # variables
-  moc_info="$(mocp -i)"
+if [ ! $status = null ]; then moc_info="$(mocp -i)"
   # set file_name
   file_name="${moc_info#File: }" #%file
   file_name="${file_name##*/}" #%file
@@ -86,7 +67,7 @@ if [ ! $status = null ]; then
   title_state="${moc_info#* }" #%state
   title+="${title_state%%[[:cntrl:]]*}" #%state
   title+="] "
-  title+=$file_name
+  title+="$file_name"
 fi #if [ -z $status ]; then
 # functions
 function sanatize () {
@@ -98,8 +79,8 @@ function sanatize () {
   input=("${input//\"/&quot;}")
   input=("${input//\'/&apos;}")
   input=("${input//_/__}")
-  echo $input ;}
-function menu_id () { ((id_number++)) ;}
+  echo "$input" ;}
+function menu_id () { if [ -z "$id_number" ]; then id_number=0; else ((id_number++)); fi ;}
 function mcall () {
   menu_id
   local label="$(sanatize $1)"
@@ -112,19 +93,13 @@ function icall () {
   echo '<item label="'$label'"><action name="Execute"><command>' ;}
 function iend () { echo '</command></action></item>' ;}
 function separator () {
-  if [ -z "$*" ]; then
-  echo '<separator/>'
-  else
-  local label="$(sanatize $1)"
-  echo '<separator label="'$label'"/>'; fi ;}
+  if [ -z "$*" ]; then echo '<separator/>'
+  else local label="$(sanatize $1)"; echo '<separator label="'$label'"/>'; fi ;}
 # start of menu
 echo "<openbox_pipe_menu>"
-  if [[ -z $status ]]; then
-    #start music player, because it isn't running
-    icall "Start MOCP"; echo "$te mocp"; iend
-  else
-    separator "$title"
-    if [ ! $title = "MOC [STOP] " ]; then
+  if [[ -z $status ]]; then icall "Start MOCP" "S"; echo "$te mocp"; iend
+  else separator "$title"
+    if [ ! "$title_state" = "STOP" ]; then
       #controls
       icall "Play / Pause" "P"; echo "mocp -G"; iend
       icall "Next" "N"; echo "mocp -f"; iend
@@ -157,18 +132,11 @@ echo "<openbox_pipe_menu>"
         icall "AutoNext off"; echo "mocp -u n"; iend
       mend
     fi
-    #open music player
     icall "Open MOCP" "O"; echo $te" mocp"; iend
-    #link to path
     icall "Music Folder"; echo $fm $path; iend
-    #kill mocp
     separator
     mcall "Kill MOC"; icall "yes"; echo "mocp -x"; iend; mend
   fi
 #end of pipemenu
 echo "</openbox_pipe_menu>"
 exit 0
-##########
-# to do list
-#
-# reduce command calles
