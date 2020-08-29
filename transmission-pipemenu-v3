@@ -5,6 +5,8 @@
 #
 declare -r download_limits=(0 10 100 1000)
 declare -r upload_limits=(0 1 10 100)
+# setting software
+declare -r fm='thunar'
 #
 # Don't edit past this line unless you know what you are doing
 #
@@ -27,7 +29,6 @@ IFS=$(echo -en "\n\b")
 # setting variables and checking for them
 declare script; script="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
 declare script_name; script_name="$(basename "${BASH_SOURCE[0]}")"
-#if [ -z "$path" ]; then echo "path must be set with '-p /path/to/stuff'" && exit 1; fi
 if [ -z "$id_header" ]; then id_header="m"; fi
 # functions
 function sanatize () {
@@ -122,6 +123,9 @@ function tpull () {
   t_added="${t#*Date added: }"
   t_added="${t_added%%[[:cntrl:]]*}"
   t_added="${t_added//  /}"
+  t_finished="${t#*Date finished: }"
+  t_finished="${t_added%%[[:cntrl:]]*}"
+  t_finished="${t_added//  /}"
   t_size="${t#*Total size: }"
   t_size="${t_size%%(*}"
   t_path="${t#*Location: }"
@@ -135,9 +139,10 @@ function tsec () {
   # status
   separator "Status: $t_status"
   # controls
-  if [ $t_status = "Paused" ] || [ $t_status = "Finished" ] || [ $t_status = "Stopped" ]; then
+  if [ $t_status = "Finished" ]; then icall "Open Folder"; echo "$fm $t_path"; iend;fi
+  if [ $t_status = "Paused" ] || [ $t_status = "Stopped" ]; then
     icall "Start"; echo "transmission-remote $connection -t $1 -s"; iend
-  else
+  elif [ ! $t_status = "Finished" ]; then
     icall "Stop"; echo "transmission-remote $connection -t $1 -S"; iend
   fi #if [[ $t_status = "Paused" ]]; then
   separator
@@ -145,30 +150,36 @@ function tsec () {
     mcall "Remove Torrent"; icall "Yes"; echo "transmission-remote $connection -t $1 -r"; iend; mend
     mcall "Remove Torrent and Data"; icall "yes"; echo "transmission-remote $connection -t $1 -rad"; iend; mend
   mend
-  separator
-  mcall "Down Limit: $t_dlimit"
-    icall "Disable Limit"; echo "transmission-remote $connection -t $1 -D"; iend
+  if [ ! $t_status = "Finished" ]; then
     separator
-    for i in "${download_limits[@]}"; do icall "Set to $i KB/s"; echo "transmission-remote $connection -t $1 -d $i"; iend; done
-    #~ unset i #sanatizing i
-  mend
-  mcall "Up Limit: $t_ulimit"
-    icall "Disable Limit"; echo "transmission-remote $connection -t $1 -U"; iend
-    separator
-    for i in "${upload_limits[@]}"; do icall "Set to $i KB/s"; echo "transmission-remote $connection -t $1 -u $i"; iend; done
-    #~ unset i #sanatizing i
-  mend
-  icall "Honor Limits: $t_hl"
-    if [ $t_hl = "No" ]; then echo "transmission-remote $connection -t $1 -hl"
-    else echo "transmission-remote $connection -t $1 -HL"; fi
-  iend
+    mcall "Down Limit: $t_dlimit"
+      icall "Disable Limit"; echo "transmission-remote $connection -t $1 -D"; iend
+      separator
+      for i in "${download_limits[@]}"; do icall "Set to $i KB/s"; echo "transmission-remote $connection -t $1 -d $i"; iend; done
+      #~ unset i #sanatizing i
+    mend
+    mcall "Up Limit: $t_ulimit"
+      icall "Disable Limit"; echo "transmission-remote $connection -t $1 -U"; iend
+      separator
+      for i in "${upload_limits[@]}"; do icall "Set to $i KB/s"; echo "transmission-remote $connection -t $1 -u $i"; iend; done
+      #~ unset i #sanatizing i
+    mend
+    icall "Honor Limits: $t_hl"
+      if [ $t_hl = "No" ]; then echo "transmission-remote $connection -t $1 -hl"
+      else echo "transmission-remote $connection -t $1 -HL"; fi
+    iend
+    icall "Reannounce Torrent"; echo "transmission-remote $connection -t $1 --reannounce"; iend
+  fi #if [ ! $t_status = "Finished" ]; then
   # connection info downloading
   separator "Have/Avalible: $t_perc / $t_avalible"
-  separator "ETA: $t_eta"
-  separator "Down/Up: $t_down / $t_up"
+  if [ ! $t_status = "Finished" ]; then
+    separator "ETA: $t_eta"
+    separator "Down/Up: $t_down / $t_up"
+  fi #if [ ! $t_status = "Finished" ]; then
   # general info
   mcall "General Info"
     separator "Added: $t_added"
+    if [ $t_status = "Finished" ]; then separator "Finished: $t_finished";fi
     separator "Total Size: $t_size"
     separator "Seed Ratio: $t_sr"
     separator "Path: $t_path"
