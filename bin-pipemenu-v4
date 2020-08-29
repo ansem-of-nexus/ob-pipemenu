@@ -63,9 +63,11 @@ echo "<openbox_pipe_menu>"
           separator $file_link_name
           separator $file_link_perms
           icall "Open Folder"; echo "$fm $file_link_dir"; iend
+          separator
           icall "edit"; echo "$ed $file_link_dir/$file_link_name"; iend
           if [[ $file_link_perms == *x* ]]; then
             icall "chmod -x"; echo "chmod -x $file_link_dir/$file_link_name"; iend
+            separator
             mcall "Run"
               icall "Run file"; echo "$file_link_dir/$file_link_name"; iend
               icall "Run in terminal"; echo "$te $file_link_dir/$file_link_name"; iend
@@ -78,6 +80,7 @@ echo "<openbox_pipe_menu>"
       icall "edit"; echo "$ed /home/$USER/bin/$file_name"; iend
       if [[ $file_perms == *x* ]]; then
         icall "chmod -x"; echo "chmod -x /home/$USER/bin/$file_name"; iend
+        separator
         mcall "Run"
           icall "Run file"; echo "$file_link_dir/$file_link_name"; iend
           icall "Run in terminal"; echo "$te $file_link_dir/$file_link_name"; iend
