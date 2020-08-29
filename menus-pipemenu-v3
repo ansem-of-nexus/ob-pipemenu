@@ -3,10 +3,10 @@
 # add to menus like openbox with a like this:
 # <menu execute="script-name /path/to/menus/ " id="script-name" label="menu name"/>
 #
-# file manager
+# setting software
 declare -r fm='thunar'
-# editor
 declare -r ed='geany'
+declare -r te='terminator -x'
 #
 # Do not edit lines passed this point unless you know what you are doing
 #
@@ -64,15 +64,16 @@ echo "<openbox_pipe_menu>"
         file_link_name="${file_link_ls%\"*}"
         file_link_name="${file_link_name##*/}"
         mcall $file_perms
-          separator $file_link_name
-          separator $file_link_perms
+          separator "$file_link_name"
+          separator "$file_link_perms"
           icall "Open Folder"; echo "$fm $file_link_dir"; iend
+          separator
           icall "edit"; echo "$ed $file_link_dir/$file_link_name"; iend
           if [[ $file_link_perms == *x* ]]; then icall "chmod -x"; echo "chmod -x $file_link_dir/$file_link_name"; iend
           else icall "chmod +x"; echo "chmod +x $file_link_dir/$file_link_name"; iend; fi
         mend
         separator
-      else separator $file_perms; fi
+      else separator "$file_perms"; fi
       icall "edit"; echo "$ed $1$file_name"; iend
       if [[ $file_perms == *x* ]]; then icall "chmod -x"; echo "chmod -x $1$file_name"; iend
       else icall "chmod +x"; echo "chmod +x $1$file_name"; iend; fi
