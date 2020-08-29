@@ -1,11 +1,10 @@
 #!/bin/bash
 #
 # add to menus like openbox with a like this:
-# <menu execute=\"/path/to/script [options]\" id=\"menu id\" label=\"menu name\"/>"
+# <menu execute="/path/to/script [options]" id="menu id" label="menu name"/>"
 #
-# file manager
+# Setting Software
 declare -r fm='thunar'
-# editor
 declare -r ed='geany'
 #
 # Do not edit lines passed this point unless you know what you are doing
@@ -17,7 +16,7 @@ function help_screen () {
   echo ""
   echo "-h (this screen)"
   echo "-m /path/to/menu.xml"
-  echo "-p /path/to/stuff"
+  #echo "-p /path/to/stuff"
   echo "-i id_header (id header and id_number of the menu this is called inside of)"
   echo "-r (telling script that is is being run inside of itself)"
   echo ""
@@ -31,119 +30,47 @@ declare menu
 # making loops ignore spaces
 IFS=$(echo -en "\n\b")
 # functions
-function sanatize () {
-  local input="$1"
+function sanatize () { local input="$1"
   # sanatizing input
-  input=("${input//</&lt;}")
   input=("${input//&/&amp;}")
+  input=("${input//</&lt;}")
   input=("${input//>/&gt;}")
   input=("${input//\"/&quot;}")
   input=("${input//\'/&apos;}")
   input=("${input//_/__}")
-  echo $input ;}
+  echo "$input";}
 function menu_id () { if [ -z id_number ]; then id_number=0; fi; ((id_number++)) ;}
-function mcall () {
-  menu_id
+function mcall () { menu_id
   local label="$(sanatize $1)"
   if [ -z "$2" ]; then label=$label"_"; else label=("${label/$2/_$2}"); fi
   echo "<menu id=\"${script_name}_menu_id_${id_header}-${id_number}\" label=\"$label\">" ;}
 function mend () { echo '</menu>' ;}
-function icall () {
-  local label="$(sanatize $1)"
+function icall () { local label="$(sanatize $1)"
   if [ -z "$2" ]; then label=$label"_"; else label=("${label/$2/_$2}"); fi
   echo '<item label="'$label'"><action name="Execute"><command>' ;}
 function iend () { echo '</command></action></item>' ;}
 function separator () {
-  if [ -z "$*" ]; then
-  echo '<separator/>'
-  else
-  local label="$(sanatize $1)"
-  echo '<separator label="'$label'"/>'; fi ;}
-#function pcall () {
-#  # order of inputs is command arguments, then label, and then hotkey
-#  local label; label="$(sanatize "$2")"
-#  #setting hotkey
-#  if [ -z "$3" ]; then label+="_"; else label="${label/$3/_$3}"; fi
-#  menu_id
-#  echo "<menu execute=\"$script $(sanatize $1) -i $id_header -r\" id=\"${script_name}_menu_id_${id_header}-${id_number}\" label=\"$label\"/>"
-#  }
-#function logic () {
-#  while read l; do
-#    case $l in
-#      \-*)
-#        perms="${l%%\ *}"
-#        file="${l#*\"}"
-#        file="${file%%\"*}"
-#        size="${l#*$USER }"
-#        size="${size::4}"
-#        separator "$perms"
-#        separator "$size"
-#        icall "Edit"; echo "$ed $file"; iend
-#        icall "Delete"; echo "$ed $file"; iend
-#        logic "$path" "$label"
-#        ;;
-#      d*)
-#        dir="${l%\"*}"
-#        dir="${dir##*\"}"
-#        entry="${dir##*\/}"
-#        pcall "-p $path$dir" "$entry"
-#        ;;
-#      l*)
-#        entry="${l#*\"}"
-#        entry="${entry%%\"*}"
-#        link="${l%\"*}"
-#        link="${link##*\"}"
-#        if [ -d "$link" ]; then
-#          entry="${entry##\/*}"
-#          pcall "-p $link" "$entry"
-#        else
-#          entry="${entry%*\.}"
-#          size="${l##*$USER}"
-#          size="${size##*( )}"
-#          size="${size%%\ *}"
-#          file_logic "$link" "$entry" "$size"
-#        fi
-#        ;;
-#    esac
-#  done <<< "$(ls -ohQ "$1"|grep -v ^total)" ;}
+  if [ -z "$*" ]; then echo '<separator/>'
+  else local label="$(sanatize $1)"
+  echo '<separator label="'$label'"/>';fi;}
 # parsing out arguments
-while getopts ":hp:i:rm:" opt; do
-  case $opt in
-    h)
+while getopts ":hp:i:rm:" opt; do case $opt in
+    h) help_screen
+      exit 0;;
+    p) case "${OPTARG}" in
+        */) declare -r path="${OPTARG}";;
+        *) declare -r path="${OPTARG}/";;
+      esac;;
+    i) id_header="${OPTARG}";;
+    r) recursion=1;;
+    m) declare -r menu="${OPTARG}";;
+    \?) echo "Invalid option: -$OPTARG" >&2
       help_screen
-      exit 0
-      ;;
-    p)
-      case "${OPTARG}" in
-        */)
-          declare -r path="${OPTARG}"
-          ;;
-        *)
-          declare -r path="${OPTARG}/"
-          ;;
-      esac
-      ;;
-    i)
-      id_header="${OPTARG}"
-      ;;
-    r)
-      recursion=1
-      ;;
-    m)
-      declare -r menu="${OPTARG}"
-      ;;
-    \?)
-      echo "Invalid option: -$OPTARG" >&2
+      exit 1;;
+    :) echo "Option -$OPTARG requires an argument." >&2
       help_screen
-      exit 1
-      ;;
-    :)
-      echo "Option -$OPTARG requires an argument." >&2
-      help_screen
-      exit 1
-      ;;
-  esac
-done #while getopts "??" opt; do
+      exit 1;;
+esac; done #while getopts "??" opt; do
 # vars
 declare -r script="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
 declare -r script_name="$(basename "${BASH_SOURCE[0]}")"
@@ -152,77 +79,86 @@ if [ -z $id_header ]; then id_header="m"; fi
 if [ -z $recursion ]; then
   # main pipemenu
   echo "<openbox_pipe_menu>"
-  icall "Edit Menu.xml"; echo "$ed $menu"; iend
-  if [ ! -z "$path" ]; then icall "Open Pipemenu folder"; echo "$fm $path"; iend; fi
-  separator
-  while read l; do
-    if [[ "$l" = *"<menu execute"* ]]; then
-      # parsing pipemenu entry
-      pipemenu="${l#*execute=\"}"
-      pipemenu="${pipemenu%%\ *}"
-      #~ if [[ $pipemenu = ^\~* ]]; then pipemenu="${pipemenu/\~/\/home\/$USER\/}"; fi
-      pipemenu="${pipemenu/\~/\/home\/$USER}"
-      label="${l#*label=\"}"
-      label="${label%%\"*}"
-      # looking up pipemenu file
-      file="$(ls -hoQ $pipemenu)"
-      # parsing file entry
-      perms="${file::10}"
-      size="${file#*$USER }"
-      if [[ $size = ^\ * ]]; then size="${size##( )}"; fi
-      size="${size%%\ *}"
-      mcall "$label"
-        separator "Perms: $perms"
-        separator "Size: $size"
-        icall "Edit"; echo "$ed $pipemenu"; iend
-        if [ $l = ^"<!--" ]; then
-          icall "enable menu"; echo "$ed $menu"; iend
-        else
-          icall "disable menu"; echo "$ed $menu"; iend
-        fi # if menu is commented out
-        icall "delete entry"; echo "$ed $menu"; iend
-        # replace file with selected file from list
-      mend
-#      pcall "-f $pipemenu" "$label"
-#    else
-#      echo "<!-- not reconized as pipemenu line '$l' -->"
-    fi
-  done <<< "$(cat $menu)"
+    mcall "Openbox"
+      echo "<item label=\"Reconfigure\"><action name=\"Reconfigure\"/></item>"
+      echo "<item label=\"Restart\"><action name=\"Restart\"/></item>"
+      separator
+      icall "Edit Menu.xml"; echo "$ed $menu"; iend
+      #icall "Open Pipemenu folder"; echo "$fm $menu"; iend
+      separator
+      icall "Obconf"; echo "obconf"; iend
+    mend
+    separator "Pipemenu List"
+    while read l; do
+      if [[ "$l" = *"<menu execute"* ]]; then
+        # parsing pipemenu entry
+        pipemenu="${l#*execute=\"}"
+        pipemenu="${pipemenu%%\ *}"
+        if [[ $pipemenu = \~* ]]; then pipemenu="${pipemenu/\~/\/home\/$USER}"; fi
+        #pipemenu="${pipemenu/\~/\/home\/$USER}"
+        folder="${pipemenu%\/*}"
+        label="${l#*label=\"}"
+        label="${label%%\"*}"
+        id="${l#*id=\"}"
+        id="${id%%\"*}"
+        # looking up pipemenu file
+        file="$(ls -ohQ $pipemenu)"
+        # parsing file entry
+        perms="${file::10}"
+        size="${file#*$USER }"
+        if [[ $size = ^\ * ]]; then size="${size##( )}"; fi
+        size="${size%%\ *}"
+        mcall "$id"
+          if [[ $perms == l* ]]; then
+            link="${file%\"*}"
+            link="${link##*\"}"
+            link_dir="${link%\/*}"
+            link_ls="$(ls -ohQ $link)"
+            link_perms="${link_ls%%\ *}"
+            link_size="${link_ls#*$USER\ }"
+            link_size="${link_size%%\ *}"
+            link_name="${link_ls%\"*}"
+            link_name="${link_name##*/}"
+            mcall $perms
+              separator $link_name
+              separator $link_perms
+              separator $link_size
+              icall "edit"; echo "$ed $link_dir/$link_name"; iend
+              if [[ $link_perms == *x* ]]; then icall "chmod -x"; echo "chmod -x $link_dir/$link_name"; iend
+              else icall "chmod +x";echo "chmod +x $link";iend;fi
+              separator
+              icall "Open Folder"; echo "$fm $link_dir"; iend
+            mend
+          else
+            separator "Perms: $perms"
+          fi
+          separator "Size: $size"
+          if [[ "$l" = \<!--* ]]; then
+            icall "enable menu"; echo "$(sanatize "sed -e '/$id/ s/<!--// ; /$id/ s/-->//' -i $menu")"; iend
+          else
+            icall "disable menu"; echo "$(sanatize "sed -e '/$id/ s/^/<!--/ ; /$id/ s/$/-->/' -i $menu")"; iend
+          fi # if menu is commented out
+          mcall "delete entry"; icall "Yes"; echo "$(sanatize "sed -e '/id=\"$id\"/d' -i $menu")"; iend; mend
+          separator
+          icall "Edit"; echo "$ed $pipemenu"; iend
+          if [[ $perms == *x* ]]; then
+            icall "chmod -x";echo "chmod -x $pipemenu";iend
+          else
+            icall "chmod +x";echo "chmod +x $pipemenu";iend
+          fi #if [[ $perms == *x* ]]; then
+          separator
+          icall "Open Folder";echo "$fm $folder";iend
+          # replace file with selected file from list
+        mend
+      fi #if [[ "$l" = *"<menu execute"* ]]; then
+    done <<< "$(cat $menu)"
   echo "</openbox_pipe_menu>"
 else
   # recursive pipemenu
   echo "<openbox_pipe_menu>"
-  echo "<!--pipemenu has been called again-->"
+    echo "<!--pipemenu has been called again-->"
   echo "</openbox_pipe_menu>"
 fi #if [ -z $recursion ]; then
 exit 0
-# pipemenu main idea
-# 1: edit openbox menu.xml
-# 2: open pipemune folder
-# 3: separator
-# 4: pipemenu in menu.xml
-#   4.1: perms
-#   4.2: size
-#   4. : edit
-#   4.3: enable / disable
-#   4.4: delete?
-#   4.5: change file
-# files and linked files??
-#while read l; do
-#  if [ ! $l = "${l#$pipemenu_name} "]; then
-#    file_menu $path
-#    break
-#  fi
-#done <<< "$(cat $menu)"
-#
-# call main
-#   reads menu.xml for pipes
-#   each pipe gets menu
-# menu contents
-#   perms
-#   size
-#   edit pipe
-#   delete pipe
-#   replace pipe menu
-#     menu is list from $path
-#
+# To-Do List
+# change menu with a list?
